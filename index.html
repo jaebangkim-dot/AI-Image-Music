@@ -176,6 +176,18 @@
                             class="w-full text-sm font-serif leading-relaxed text-slate-800 p-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 resize-none"></textarea>
                     </div>
 
+                    <!-- Instrument Selector -->
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">SYNTHESIZER INSTRUMENT</label>
+                        <select id="instrument-select" class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-xl p-2.5 font-medium focus:outline-none focus:border-indigo-500">
+                            <option value="synth">Warm Analog Synth Pad</option>
+                            <option value="piano">Acoustic Piano Envelope</option>
+                            <option value="flute">Breathy Soft Flute</option>
+                            <option value="chime">Metallic Bell & Chimes</option>
+                            <option value="retro">8-Bit Retro Chiptune</option>
+                        </select>
+                    </div>
+
                     <div class="grid grid-cols-2 gap-3 pt-2">
                         <button id="btn-generate-image" class="group bg-gradient-to-br from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 border border-indigo-200/70 p-3 rounded-xl transition flex flex-col items-center justify-center text-center space-y-1">
                             <div class="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-md">
@@ -457,7 +469,6 @@
             }
         }
 
-        // Helper function with crossOrigin set so Canvas/localStorage does not throw CORS taint errors on Mac
         function compressBase64Image(base64Str, maxWidth = 450, quality = 0.6) {
             return new Promise((resolve) => {
                 const img = new Image();
@@ -532,6 +543,7 @@
 
         async function generateMusicFromText(textPrompt) {
             showLoading("Synthesizing Music", "Analyzing emotion & composing harmonic notes...");
+            const selectedInst = document.getElementById('instrument-select')?.value || 'synth';
             try {
                 const apiKey = state.geminiApiKey || "";
                 if (apiKey) {
@@ -550,9 +562,19 @@
                                     properties: {
                                         title: { type: "STRING" },
                                         mood: { type: "STRING" },
-                                        notes: { type: "ARRAY", items: { type: "STRING" } }
+                                        progression: {
+                                            type: "ARRAY",
+                                            items: {
+                                                type: "OBJECT",
+                                                properties: {
+                                                    chord: { type: "ARRAY", items: { type: "STRING" } },
+                                                    melody: { type: "ARRAY", items: { type: "STRING" } }
+                                                },
+                                                required: ["chord", "melody"]
+                                            }
+                                        }
                                     },
-                                    required: ["title", "mood", "notes"]
+                                    required: ["title", "mood", "progression"]
                                 }
                             }
                         })
@@ -563,7 +585,9 @@
                         const textData = result.candidates?.[0]?.content?.parts?.[0]?.text;
                         if (textData) {
                             hideLoading();
-                            return JSON.parse(textData);
+                            const parsed = JSON.parse(textData);
+                            parsed.instrument = selectedInst;
+                            return parsed;
                         }
                     }
                 }
@@ -574,41 +598,178 @@
             return {
                 title: "Calm Horizon Soundscape",
                 mood: "Serene & Reflective",
-                notes: ["D4", "F4", "A4", "C5", "E5"]
+                instrument: selectedInst,
+                progression: [
+                    { chord: ["C3", "G3", "C4"], melody: ["E4", "G4", "B4", "C5"] },
+                    { chord: ["A2", "E3", "A3"], melody: ["C5", "B4", "A4", "E4"] },
+                    { chord: ["F2", "C3", "F3"], melody: ["A4", "C5", "D5", "E5"] },
+                    { chord: ["G2", "D3", "G3"], melody: ["B4", "G4", "D4", "G4"] }
+                ]
             };
         }
 
-        function playSynthesizerNotes(notes) {
+        function playSynthesizerNotes(trackData) {
             try {
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
-                state.synthAudioCtx = new AudioContext();
-                
+                if (state.synthAudioCtx && state.synthAudioCtx.state !== 'closed') {
+                    state.synthAudioCtx.close();
+                }
+                const ctx = new AudioContext();
+                state.synthAudioCtx = ctx;
+
                 const noteFreqs = {
+                    'C2': 65.41, 'D2': 73.42, 'E2': 82.41, 'F2': 87.31, 'G2': 98.00, 'A2': 110.00, 'B2': 123.47,
                     'C3': 130.81, 'D3': 146.83, 'E3': 164.81, 'F3': 174.61, 'G3': 196.00, 'A3': 220.00, 'B3': 246.94,
                     'C4': 261.63, 'D4': 293.66, 'E4': 329.63, 'F4': 349.23, 'G4': 392.00, 'A4': 440.00, 'B4': 493.88,
-                    'C5': 523.25, 'D5': 587.33, 'E5': 659.25, 'F5': 698.46, 'G5': 783.99
+                    'C5': 523.25, 'D5': 587.33, 'E5': 659.25, 'F5': 698.46, 'G5': 783.99, 'A5': 880.00, 'B5': 987.77
                 };
+
+                const instrument = trackData?.instrument || document.getElementById('instrument-select')?.value || 'synth';
+                const startTime = ctx.currentTime;
+                const progression = trackData?.progression || [
+                    { chord: ["C3", "G3", "C4"], melody: ["E4", "G4", "B4", "C5"] }
+                ];
+
+                // 1. Synthetic Reverb Convolver Node
+                const convolver = ctx.createConvolver();
+                const rate = ctx.sampleRate;
+                const length = rate * 2.5; 
+                const decay = 2.0;
+                const impulse = ctx.createBuffer(2, length, rate);
+                for (let c = 0; c < 2; c++) {
+                    const channel = impulse.getChannelData(c);
+                    for (let i = 0; i < length; i++) {
+                        channel[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay);
+                    }
+                }
+                convolver.buffer = impulse;
+
+                const masterGain = ctx.createGain();
+                masterGain.gain.setValueAtTime(0.7, startTime);
+
+                const wetGain = ctx.createGain();
+                wetGain.gain.setValueAtTime(0.35, startTime);
                 
-                let time = state.synthAudioCtx.currentTime;
-                const safeNotes = (Array.isArray(notes) && notes.length > 0) ? notes : ["C4", "E4", "G4", "C5"];
-                safeNotes.forEach((note, idx) => {
-                    const osc = state.synthAudioCtx.createOscillator();
-                    const gain = state.synthAudioCtx.createGain();
-                    osc.type = 'sine';
-                    osc.frequency.value = noteFreqs[note] || 440;
-                    
-                    gain.gain.setValueAtTime(0, time + idx * 0.4);
-                    gain.gain.linearRampToValueAtTime(0.2, time + idx * 0.4 + 0.1);
-                    gain.gain.exponentialRampToValueAtTime(0.001, time + idx * 0.4 + 1.2);
-                    
-                    osc.connect(gain);
-                    gain.connect(state.synthAudioCtx.destination);
-                    
-                    osc.start(time + idx * 0.4);
-                    osc.stop(time + idx * 0.4 + 1.3);
+                masterGain.connect(ctx.destination);
+                masterGain.connect(convolver);
+                convolver.connect(wetGain);
+                wetGain.connect(ctx.destination);
+
+                const measureDuration = 5.0;
+
+                function triggerVoice(freq, tTime, dur, isChord) {
+                    const filter = ctx.createBiquadFilter();
+                    const gain = ctx.createGain();
+
+                    const osc1 = ctx.createOscillator();
+                    const osc2 = ctx.createOscillator();
+
+                    let baseType = 'triangle';
+                    let detune = 6;
+                    let filterStart = 2000;
+                    let filterEnd = 300;
+
+                    if (instrument === 'piano') {
+                        baseType = 'triangle';
+                        osc2.type = 'sine';
+                        osc2.frequency.value = freq * 2;
+                        filterStart = isChord ? 1200 : 2800;
+                        filterEnd = 200;
+                        
+                        gain.gain.setValueAtTime(0, tTime);
+                        gain.gain.linearRampToValueAtTime(isChord ? 0.12 : 0.25, tTime + 0.015);
+                        gain.gain.exponentialRampToValueAtTime(0.0001, tTime + (isChord ? dur : 2.5));
+
+                    } else if (instrument === 'flute') {
+                        baseType = 'sine';
+                        osc2.type = 'triangle';
+                        detune = 3;
+                        filterStart = 1500;
+                        filterEnd = 600;
+
+                        gain.gain.setValueAtTime(0, tTime);
+                        gain.gain.linearRampToValueAtTime(isChord ? 0.08 : 0.18, tTime + 0.4);
+                        gain.gain.exponentialRampToValueAtTime(0.0001, tTime + dur + 0.5);
+
+                    } else if (instrument === 'chime') {
+                        baseType = 'sine';
+                        osc2.type = 'sine';
+                        osc2.frequency.value = freq * 2.75;
+                        filterStart = 4000;
+                        filterEnd = 1000;
+
+                        gain.gain.setValueAtTime(0, tTime);
+                        gain.gain.linearRampToValueAtTime(0.2, tTime + 0.005);
+                        gain.gain.exponentialRampToValueAtTime(0.0001, tTime + 3.0);
+
+                    } else if (instrument === 'retro') {
+                        baseType = 'square';
+                        osc2.type = 'sawtooth';
+                        detune = 12;
+                        filterStart = 3000;
+                        filterEnd = 800;
+
+                        gain.gain.setValueAtTime(0, tTime);
+                        gain.gain.linearRampToValueAtTime(0.08, tTime + 0.02);
+                        gain.gain.exponentialRampToValueAtTime(0.0001, tTime + 1.5);
+
+                    } else { 
+                        baseType = 'sawtooth';
+                        osc2.type = 'triangle';
+                        detune = 10;
+                        filterStart = 1800;
+                        filterEnd = 400;
+
+                        gain.gain.setValueAtTime(0, tTime);
+                        gain.gain.linearRampToValueAtTime(0.1, tTime + 0.8);
+                        gain.gain.exponentialRampToValueAtTime(0.0001, tTime + dur + 0.5);
+                    }
+
+                    osc1.type = baseType;
+                    osc1.frequency.setValueAtTime(freq, tTime);
+
+                    if (instrument !== 'piano' && instrument !== 'chime') {
+                        osc2.frequency.setValueAtTime(freq, tTime);
+                    }
+                    osc2.detune.setValueAtTime(detune, tTime);
+
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(filterStart, tTime);
+                    filter.frequency.exponentialRampToValueAtTime(filterEnd, tTime + (isChord ? dur : 1.2));
+
+                    osc1.connect(filter);
+                    osc2.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(masterGain);
+
+                    osc1.start(tTime);
+                    osc2.start(tTime);
+                    osc1.stop(tTime + dur + 0.6);
+                    osc2.stop(tTime + dur + 0.6);
+                }
+
+                progression.forEach((measure, mIndex) => {
+                    const mTime = startTime + (mIndex * measureDuration);
+
+                    if (measure.chord && Array.isArray(measure.chord)) {
+                        measure.chord.forEach(note => {
+                            const freq = noteFreqs[note] || 130.81;
+                            triggerVoice(freq, mTime, measureDuration, true);
+                        });
+                    }
+
+                    if (measure.melody && Array.isArray(measure.melody)) {
+                        const noteInterval = measureDuration / measure.melody.length;
+                        measure.melody.forEach((note, nIndex) => {
+                            const noteTime = mTime + (nIndex * noteInterval);
+                            const freq = noteFreqs[note] || 440;
+                            triggerVoice(freq, noteTime, 2.5, false);
+                        });
+                    }
                 });
+
             } catch (e) {
-                console.error("Web Audio error:", e);
+                console.error("Web Audio playback error:", e);
             }
         }
 
@@ -832,7 +993,7 @@
                     </button>
                 `;
                 card.querySelector('.play-btn').onclick = () => {
-                    playSynthesizerNotes(track.notes);
+                    playSynthesizerNotes(track);
                     showToast("Playing AI synthesized soundtrack");
                 };
                 container.appendChild(card);
@@ -873,6 +1034,10 @@
             const existing = state.diaries[dateKey];
             document.getElementById('diary-textarea').value = existing ? existing.text : '';
             
+            if (existing && existing.musicTrack && existing.musicTrack.instrument) {
+                document.getElementById('instrument-select').value = existing.musicTrack.instrument;
+            }
+
             state.activeEditingMedia = {
                 imageUrl: existing ? (existing.imageUrl || null) : null,
                 musicTrack: existing ? (existing.musicTrack || null) : null
@@ -1041,7 +1206,7 @@
 
             document.getElementById('editor-play-track-btn').onclick = () => {
                 if (state.activeEditingMedia.musicTrack) {
-                    playSynthesizerNotes(state.activeEditingMedia.musicTrack.notes);
+                    playSynthesizerNotes(state.activeEditingMedia.musicTrack);
                     showToast("Playing synthesized track");
                 }
             };
@@ -1056,7 +1221,7 @@
                 updateEditorMediaPreviews();
             };
 
-            // SAVE ENTRY: Strictly Saves Text, Compressed Image, and Music to local state
+            // SAVE ENTRY
             document.getElementById('save-diary-btn').onclick = async () => {
                 const dateKey = document.getElementById('editor-date-input').value;
                 const text = document.getElementById('diary-textarea').value.trim();
@@ -1085,7 +1250,7 @@
             document.getElementById('close-modal-btn').onclick = closeEntryModal;
             document.getElementById('modal-play-music-btn').onclick = () => {
                 if (state.currentModalDateKey && state.diaries[state.currentModalDateKey]?.musicTrack) {
-                    playSynthesizerNotes(state.diaries[state.currentModalDateKey].musicTrack.notes);
+                    playSynthesizerNotes(state.diaries[state.currentModalDateKey].musicTrack);
                     showToast("Playing audio track");
                 }
             };
@@ -1122,3 +1287,4 @@
     </script>
 </body>
 </html>
+       
