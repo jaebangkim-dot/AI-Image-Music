@@ -1,0 +1,1275 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI Multimedia Diary Studio</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            indigo: '#6366f1',
+                            purple: '#a855f7'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Merriweather', 'serif']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Font Awesome Icons & Google Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+    
+    <style>
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+    </style>
+</head>
+<body class="h-full font-sans antialiased text-slate-800 selection:bg-indigo-500 selection:text-white flex justify-center items-center bg-slate-900 sm:py-6">
+    <!-- Mobile Container Simulation for Desktop / Native View for Mobile -->
+    <div id="app-wrapper" class="w-full max-w-md h-full sm:h-[880px] bg-slate-50 sm:rounded-[40px] shadow-2xl flex flex-col overflow-hidden relative border-0 sm:border-8 border-slate-800">
+        
+        <!-- Status Bar -->
+        <div class="bg-slate-900 text-white px-6 pt-3 pb-2 flex justify-between items-center text-xs font-semibold tracking-wider select-none z-50 shrink-0">
+            <span id="current-time-clock">09:41</span>
+            <div class="flex items-center space-x-2 text-slate-300">
+                <i class="fas fa-signal text-[10px]"></i>
+                <i class="fas fa-wifi text-[10px]"></i>
+                <i class="fas fa-battery-full text-[12px]"></i>
+            </div>
+        </div>
+
+        <!-- Passcode Lock Overlay -->
+        <div id="lock-screen" class="absolute inset-0 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 z-50 flex flex-col items-center justify-center p-6 text-white transition-opacity duration-300">
+            <div class="w-16 h-16 bg-indigo-500/20 border border-indigo-400/30 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-indigo-500/10">
+                <i class="fas fa-lock text-3xl text-indigo-400"></i>
+            </div>
+            <h2 class="text-2xl font-bold tracking-tight mb-1">AI Diary Studio</h2>
+            <p class="text-slate-400 text-xs mb-8 text-center">Please enter passcode to access your personal journal</p>
+            
+            <div class="w-full max-w-xs space-y-4">
+                <div class="relative">
+                    <input type="password" id="passcode-input" placeholder="Enter passcode" 
+                        class="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-4 py-3 text-center text-xl font-mono text-white placeholder:text-slate-500 placeholder:text-base focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 tracking-widest">
+                </div>
+                <button id="unlock-btn" class="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-medium py-3 rounded-xl shadow-lg transition active:scale-[0.98] flex items-center justify-center space-x-2">
+                    <span>Unlock Journal</span>
+                    <i class="fas fa-arrow-right text-xs"></i>
+                </button>
+                <p id="lock-error" class="text-rose-400 text-xs text-center hidden"><i class="fas fa-circle-exclamation me-1"></i> Incorrect passcode.</p>
+            </div>
+        </div>
+
+        <!-- App Header Bar -->
+        <header class="bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-5 py-3 flex items-center justify-between z-30 shrink-0">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white text-sm shadow-md shadow-indigo-200">
+                    <i class="fas fa-book-sparkles"></i>
+                </div>
+                <div>
+                    <h1 class="text-base font-bold text-slate-800 leading-tight" id="header-title">Calendar</h1>
+                    <div class="flex items-center space-x-1">
+                        <span id="sync-dot" class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                        <p class="text-[10px] text-slate-400 font-medium" id="sync-status-indicator">Connecting to cloud...</p>
+                    </div>
+                </div>
+            </div>
+            <button id="header-action-btn" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-xs font-semibold px-3 py-1.5 rounded-lg border border-indigo-200/60 transition flex items-center space-x-1">
+                <i class="fas fa-plus text-[10px]"></i>
+                <span>New Entry</span>
+            </button>
+        </header>
+
+        <!-- Main Content Scroll Area -->
+        <main class="flex-1 overflow-y-auto relative bg-slate-50/60" id="main-content">
+            
+            <!-- VIEW 1: HOME (CALENDAR VIEW) -->
+            <section id="view-home" class="p-4 space-y-4">
+                <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-2">
+                            <h2 id="calendar-month-year" class="text-base font-bold text-slate-800">October 2026</h2>
+                            <span class="text-xs bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full font-medium">Today</span>
+                        </div>
+                        <div class="flex items-center space-x-1">
+                            <button id="prev-month-btn" class="w-8 h-8 rounded-lg text-slate-500 hover:bg-slate-100 flex items-center justify-center transition">
+                                <i class="fas fa-chevron-left text-xs"></i>
+                            </button>
+                            <button id="next-month-btn" class="w-8 h-8 rounded-lg text-slate-500 hover:bg-slate-100 flex items-center justify-center transition">
+                                <i class="fas fa-chevron-right text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-7 gap-1 text-center mb-2">
+                        <span class="text-[11px] font-semibold text-slate-400">Sun</span>
+                        <span class="text-[11px] font-semibold text-slate-400">Mon</span>
+                        <span class="text-[11px] font-semibold text-slate-400">Tue</span>
+                        <span class="text-[11px] font-semibold text-slate-400">Wed</span>
+                        <span class="text-[11px] font-semibold text-slate-400">Thu</span>
+                        <span class="text-[11px] font-semibold text-slate-400">Fri</span>
+                        <span class="text-[11px] font-semibold text-slate-400">Sat</span>
+                    </div>
+
+                    <div id="calendar-days-grid" class="grid grid-cols-7 gap-1 text-center"></div>
+                </div>
+
+                <div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl p-4 text-white shadow-lg shadow-indigo-500/10 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-indigo-100 font-medium">Selected Date</p>
+                        <h3 id="selected-date-label" class="text-lg font-bold">Today</h3>
+                        <p id="selected-date-status" class="text-xs text-indigo-200 mt-0.5">No diary entry written yet</p>
+                    </div>
+                    <button id="calendar-action-btn" class="bg-white text-indigo-600 text-xs font-bold px-4 py-2 rounded-xl shadow-md hover:bg-indigo-50 transition active:scale-95">
+                        Write Entry
+                    </button>
+                </div>
+
+                <div>
+                    <div class="flex justify-between items-center mb-2 px-1">
+                        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Recent Highlights</h3>
+                        <button id="view-all-journals-btn" class="text-xs font-semibold text-indigo-600 hover:underline">View All</button>
+                    </div>
+                    <div id="home-recent-list" class="space-y-3"></div>
+                </div>
+            </section>
+
+            <!-- VIEW 2: EDITOR VIEW -->
+            <section id="view-editor" class="p-4 space-y-4 hidden">
+                <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <div class="flex items-center space-x-2 text-slate-600">
+                            <i class="far fa-calendar-alt text-indigo-500"></i>
+                            <input type="date" id="editor-date-input" class="text-sm font-semibold text-slate-800 bg-transparent focus:outline-none">
+                        </div>
+                        <button id="save-diary-btn" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-1.5 rounded-lg transition flex items-center space-x-1 shadow-sm">
+                            <i class="fas fa-check text-[10px]"></i>
+                            <span>Save Entry</span>
+                        </button>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">YOUR DIARY ENTRY</label>
+                        <textarea id="diary-textarea" rows="6" placeholder="Dear Diary, today I discovered a peaceful meadow near the forest..." 
+                            class="w-full text-sm font-serif leading-relaxed text-slate-800 p-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 resize-none transition placeholder:font-sans placeholder:text-slate-400"></textarea>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 pt-2">
+                        <button id="btn-generate-image" class="group relative overflow-hidden bg-gradient-to-br from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 border border-indigo-200/70 p-3 rounded-xl transition flex flex-col items-center justify-center text-center space-y-1">
+                            <div class="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-md group-hover:scale-110 transition duration-200">
+                                <i class="fas fa-wand-magic-sparkles text-sm"></i>
+                            </div>
+                            <span class="text-xs font-bold text-indigo-950 mt-1">Generate AI Image</span>
+                            <span class="text-[10px] text-slate-500 leading-tight">Create visual artwork</span>
+                        </button>
+                        
+                        <button id="btn-generate-music" class="group relative overflow-hidden bg-gradient-to-br from-emerald-50 to-teal-50 hover:from-emerald-100 hover:to-teal-100 border border-emerald-200/70 p-3 rounded-xl transition flex flex-col items-center justify-center text-center space-y-1">
+                            <div class="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-md group-hover:scale-110 transition duration-200">
+                                <i class="fas fa-music text-sm"></i>
+                            </div>
+                            <span class="text-xs font-bold text-emerald-950 mt-1">Generate AI Music</span>
+                            <span class="text-[10px] text-slate-500 leading-tight">Create soundtrack from mood</span>
+                        </button>
+                    </div>
+
+                    <div id="ai-outputs-container" class="space-y-3 pt-2 border-t border-slate-100">
+                        <div id="editor-image-preview-wrapper" class="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-100 hidden">
+                            <img id="editor-image-preview" src="" alt="AI Generated Artwork" class="w-full h-48 object-cover">
+                            <div class="absolute top-2 right-2 bg-slate-900/70 backdrop-blur-sm text-white text-[10px] px-2 py-0.5 rounded-full font-medium">
+                                <i class="fas fa-image me-1"></i> Gemini Flash Image
+                            </div>
+                            <button id="remove-image-btn" class="absolute bottom-2 right-2 bg-rose-600 text-white w-7 h-7 rounded-full flex items-center justify-center shadow hover:bg-rose-700 transition">
+                                <i class="fas fa-trash-alt text-xs"></i>
+                            </button>
+                        </div>
+                        
+                        <div id="editor-music-preview-wrapper" class="p-3 bg-gradient-to-r from-slate-900 to-emerald-950 rounded-xl text-white space-y-2 hidden border border-emerald-500/20 shadow-sm">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                                        <i class="fas fa-compact-disc fa-spin"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs font-bold text-emerald-300" id="editor-track-title">Ambient Soundscape</p>
+                                        <p class="text-[10px] text-slate-400" id="editor-track-genre">AI Generated Synth Track</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <button id="editor-play-track-btn" class="w-8 h-8 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 flex items-center justify-center transition shadow">
+                                        <i class="fas fa-play text-xs ms-0.5"></i>
+                                    </button>
+                                    <button id="remove-music-btn" class="w-8 h-8 rounded-full bg-rose-600/80 hover:bg-rose-600 text-white flex items-center justify-center transition shadow">
+                                        <i class="fas fa-trash-alt text-xs"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW 3: JOURNALS VIEW -->
+            <section id="view-journals" class="p-4 space-y-3 hidden">
+                <div class="relative mb-2">
+                    <i class="fas fa-search absolute left-3 top-3 text-slate-400 text-xs"></i>
+                    <input type="text" id="journal-search-input" placeholder="Search entries by keyword..." 
+                        class="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                </div>
+                <div id="journals-list-container" class="space-y-3"></div>
+            </section>
+
+            <!-- VIEW 4: AI GALLERY VIEW -->
+            <section id="view-gallery" class="p-4 space-y-3 hidden">
+                <div class="flex items-center justify-between mb-1">
+                    <p class="text-xs text-slate-500 font-medium">Visual Memories created by Gemini AI</p>
+                    <span id="gallery-count-badge" class="text-[10px] bg-purple-100 text-purple-700 font-bold px-2 py-0.5 rounded-full">0 Images</span>
+                </div>
+                <div id="gallery-grid" class="grid grid-cols-2 gap-3"></div>
+            </section>
+
+            <!-- VIEW 5: AI MUSIC VIEW -->
+            <section id="view-music" class="p-4 space-y-3 hidden">
+                <div class="bg-gradient-to-br from-slate-900 via-emerald-950 to-slate-900 rounded-2xl p-4 text-white shadow-lg mb-2">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-12 h-12 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400 text-xl">
+                            <i class="fas fa-headphones"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-sm font-bold">AI Soundtracks</h2>
+                            <p class="text-xs text-slate-400">Atmospheric audio tailored to your daily thoughts</p>
+                        </div>
+                    </div>
+                </div>
+                <div id="music-tracks-list" class="space-y-3"></div>
+            </section>
+
+            <!-- VIEW 6: PROFILE & SETTINGS VIEW -->
+            <section id="view-profile" class="p-4 space-y-4 hidden">
+                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 text-center relative overflow-hidden">
+                    <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 text-white text-2xl font-bold flex items-center justify-center mx-auto mb-3 shadow-md border-2 border-white">
+                        <span id="profile-avatar-initials">JD</span>
+                    </div>
+                    <h2 id="profile-display-name" class="text-base font-bold text-slate-800">Jane Doe</h2>
+                    <p id="profile-display-email" class="text-xs text-slate-400">jane.doe@example.com</p>
+                    
+                    <div class="grid grid-cols-3 gap-2 mt-5 pt-4 border-t border-slate-100 text-center">
+                        <div>
+                            <span id="stat-total-entries" class="block text-base font-bold text-indigo-600">0</span>
+                            <span class="text-[10px] text-slate-400 uppercase font-semibold">Entries</span>
+                        </div>
+                        <div>
+                            <span id="stat-total-images" class="block text-base font-bold text-purple-600">0</span>
+                            <span class="text-[10px] text-slate-400 uppercase font-semibold">AI Images</span>
+                        </div>
+                        <div>
+                            <span id="stat-total-tracks" class="block text-base font-bold text-emerald-600">0</span>
+                            <span class="text-[10px] text-slate-400 uppercase font-semibold">AI Music</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-3">
+                    <div class="flex items-center space-x-2 text-indigo-600">
+                        <i class="fas fa-key text-xs"></i>
+                        <h3 class="text-xs font-bold uppercase tracking-wider">Gemini API Key Settings</h3>
+                    </div>
+                    <p class="text-[11px] text-slate-500 leading-normal">
+                        Enter your personal Gemini API key below to enable media generation.
+                    </p>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Gemini API Key</label>
+                        <div class="relative">
+                            <input type="password" id="gemini-api-key-input" placeholder="AIzaSy..." 
+                                class="w-full bg-slate-50 border border-slate-200 rounded-lg pl-3 pr-10 py-2 text-xs font-mono text-slate-800 focus:outline-none focus:border-indigo-500">
+                            <button id="toggle-gemini-key-visibility" class="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 text-xs">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-3">
+                    <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Personal Information</h3>
+                    
+                    <div>
+                        <label class="block text-[11px] font-medium text-slate-500 mb-1">Full Name</label>
+                        <input type="text" id="profile-name-input" value="Jane Doe" 
+                            class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-medium text-slate-500 mb-1">Passcode Lock</label>
+                        <input type="password" id="profile-passcode-input" value="teacher123" 
+                            class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-mono text-slate-800 focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <button id="save-profile-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2.5 rounded-lg transition shadow">
+                        Update Settings
+                    </button>
+                </div>
+
+                <button id="lock-app-btn" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold py-2.5 rounded-xl transition flex items-center justify-center space-x-2">
+                    <i class="fas fa-lock text-xs"></i>
+                    <span>Lock Journal Screen</span>
+                </button>
+            </section>
+        </main>
+
+        <!-- Bottom Navigation Bar -->
+        <nav class="bg-white/95 backdrop-blur-md border-t border-slate-200/80 px-2 py-2 flex justify-around items-center shrink-0 z-30">
+            <button id="nav-home" class="nav-btn flex flex-col items-center justify-center py-1 px-3 rounded-xl text-indigo-600 font-semibold transition">
+                <i class="fas fa-calendar-alt text-base mb-0.5"></i>
+                <span class="text-[10px]">Home</span>
+            </button>
+            <button id="nav-journals" class="nav-btn flex flex-col items-center justify-center py-1 px-3 rounded-xl text-slate-400 hover:text-slate-600 font-medium transition">
+                <i class="fas fa-book-open text-base mb-0.5"></i>
+                <span class="text-[10px]">Journals</span>
+            </button>
+            <button id="nav-gallery" class="nav-btn flex flex-col items-center justify-center py-1 px-3 rounded-xl text-slate-400 hover:text-slate-600 font-medium transition">
+                <i class="fas fa-images text-base mb-0.5"></i>
+                <span class="text-[10px]">AI Gallery</span>
+            </button>
+            <button id="nav-music" class="nav-btn flex flex-col items-center justify-center py-1 px-3 rounded-xl text-slate-400 hover:text-slate-600 font-medium transition">
+                <i class="fas fa-music text-base mb-0.5"></i>
+                <span class="text-[10px]">AI Music</span>
+            </button>
+            <button id="nav-profile" class="nav-btn flex flex-col items-center justify-center py-1 px-3 rounded-xl text-slate-400 hover:text-slate-600 font-medium transition">
+                <i class="fas fa-user text-base mb-0.5"></i>
+                <span class="text-[10px]">Profile</span>
+            </button>
+        </nav>
+
+        <!-- Entry Detail Modal Overlay -->
+        <div id="entry-detail-modal" class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex flex-col justify-end">
+            <div class="bg-white rounded-t-[32px] p-5 max-h-[90%] overflow-y-auto space-y-4 shadow-2xl transition-transform transform translate-y-0">
+                <div class="w-12 h-1 bg-slate-200 rounded-full mx-auto mb-1"></div>
+                <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                    <div>
+                        <span id="modal-entry-date" class="text-xs font-bold text-indigo-600 uppercase tracking-wider">Oct 10, 2026</span>
+                        <h3 id="modal-entry-title" class="text-base font-bold text-slate-800">Daily Reflection</h3>
+                    </div>
+                    <button id="close-modal-btn" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200 transition">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
+                
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                    <p id="modal-entry-text" class="text-sm font-serif leading-relaxed text-slate-800 whitespace-pre-wrap"></p>
+                </div>
+                
+                <div id="modal-image-container" class="hidden">
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 me-1">Gemini AI Artwork</label>
+                    <img id="modal-entry-image" src="" alt="AI Artwork" class="w-full h-52 object-cover rounded-xl shadow-sm border border-slate-100">
+                </div>
+                
+                <div id="modal-music-container" class="hidden bg-slate-900 text-white p-4 rounded-xl space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                                <i class="fas fa-music text-base"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-emerald-300" id="modal-music-title">Generated Soundtrack</p>
+                                <p class="text-[10px] text-slate-400" id="modal-music-mood">Calm Ambient Synth</p>
+                            </div>
+                        </div>
+                        <button id="modal-play-music-btn" class="w-10 h-10 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center font-bold shadow-lg hover:scale-105 transition">
+                            <i class="fas fa-play text-xs ms-0.5"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex gap-2 pt-2">
+                    <button id="modal-edit-btn" class="flex-1 bg-indigo-50 text-indigo-600 font-bold text-xs py-2.5 rounded-xl hover:bg-indigo-100 transition">
+                        <i class="fas fa-edit me-1"></i> Edit Entry
+                    </button>
+                    <button id="modal-delete-btn" class="bg-rose-50 text-rose-600 font-bold text-xs px-4 py-2.5 rounded-xl hover:bg-rose-100 transition">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Custom Toast Notification -->
+        <div id="toast-message" class="absolute top-16 left-1/2 transform -translate-x-1/2 bg-slate-900/90 text-white text-xs px-4 py-2 rounded-full shadow-lg z-50 hidden transition-all duration-300 flex items-center space-x-2">
+            <i class="fas fa-info-circle text-indigo-400" id="toast-icon"></i>
+            <span id="toast-text">Action completed successfully</span>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div id="ai-loading-overlay" class="absolute inset-0 bg-slate-900/70 backdrop-blur-md z-50 hidden flex flex-col items-center justify-center text-white p-6">
+            <div class="w-16 h-16 relative flex items-center justify-center mb-4">
+                <div class="absolute inset-0 border-4 border-indigo-500/30 rounded-full"></div>
+                <div class="absolute inset-0 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin"></div>
+                <i class="fas fa-sparkles text-indigo-300 text-xl" id="loading-spinner-icon"></i>
+            </div>
+            <h3 class="text-base font-bold tracking-wide" id="loading-title">Generating AI Artwork</h3>
+            <p class="text-xs text-slate-300 mt-1 text-center max-w-xs" id="loading-desc">Gemini is analyzing your diary text...</p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { 
+            getAuth, 
+            signInAnonymously, 
+            onAuthStateChanged, 
+            setPersistence, 
+            browserLocalPersistence 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            collection, 
+            doc, 
+            setDoc, 
+            deleteDoc, 
+            onSnapshot 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyB9QdmKLH0IrWQvBa9UVRCwZ6vb59E35nM",
+            authDomain: "ai-diary-e2cd1.firebaseapp.com",
+            projectId: "ai-diary-e2cd1",
+            storageBucket: "ai-diary-e2cd1.firebasestorage.app",
+            messagingSenderId: "664300543855",
+            appId: "1:664300543855:web:f73884086a456c5b07529a",
+            measurementId: "G-QCQZ5S3G2B"
+        };
+
+        const state = {
+            currentView: 'home',
+            passcode: 'teacher123',
+            geminiApiKey: '',
+            userProfile: { name: 'Jane Doe', email: 'jane.doe@example.com' },
+            diaries: {},
+            selectedDate: getTodayString(),
+            currentCalendarMonth: new Date().getMonth(),
+            currentCalendarYear: new Date().getFullYear(),
+            activeEditingMedia: { imageUrl: null, musicTrack: null },
+            currentModalDateKey: null,
+            synthAudioCtx: null,
+            activeOscillators: [],
+            isPlayingAudio: false
+        };
+
+        let db, auth, userId = null;
+        let unsubscribeSnapshot = null;
+
+        async function initFirebase() {
+            loadLocalSettings();
+            renderApp();
+
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                await setPersistence(auth, browserLocalPersistence);
+
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        updateSyncStatus("Cloud Realtime Sync Active", true);
+                        subscribeFirestoreDiaries();
+                    } else {
+                        try {
+                            const cred = await signInAnonymously(auth);
+                            userId = cred.user.uid;
+                            updateSyncStatus("Cloud Realtime Sync Active", true);
+                            subscribeFirestoreDiaries();
+                        } catch(e) {
+                            console.warn("Auth error:", e);
+                            updateSyncStatus("Offline (Local Cache Only)", false);
+                        }
+                    }
+                });
+            } catch (e) {
+                console.warn("Firebase init failed, running in local-only mode:", e);
+                updateSyncStatus("Offline (Local Cache Only)", false);
+            }
+        }
+
+        function updateSyncStatus(text, isOnline) {
+            const indicator = document.getElementById('sync-status-indicator');
+            const dot = document.getElementById('sync-dot');
+            if (indicator) indicator.innerText = text;
+            if (dot) {
+                dot.className = isOnline 
+                    ? "w-2 h-2 rounded-full bg-emerald-500 animate-ping" 
+                    : "w-2 h-2 rounded-full bg-amber-500";
+            }
+        }
+
+        function subscribeFirestoreDiaries() {
+            if (!db || !userId) return;
+            if (unsubscribeSnapshot) unsubscribeSnapshot();
+
+            const userDiariesCol = collection(db, 'users', userId, 'diaries');
+            
+            unsubscribeSnapshot = onSnapshot(userDiariesCol, (snapshot) => {
+                const remoteData = {};
+                snapshot.forEach(docSnap => {
+                    remoteData[docSnap.id] = docSnap.data();
+                });
+
+                state.diaries = { ...state.diaries, ...remoteData };
+
+                Object.keys(state.diaries).forEach(async (dateKey) => {
+                    if (!remoteData[dateKey]) {
+                        try {
+                            const docRef = doc(db, 'users', userId, 'diaries', dateKey);
+                            const sanitizedPayload = JSON.parse(JSON.stringify(state.diaries[dateKey]));
+                            await setDoc(docRef, sanitizedPayload);
+                        } catch(e) { 
+                            console.error("Auto-sync error:", e); 
+                        }
+                    }
+                });
+
+                saveDiariesLocally();
+                renderApp();
+            }, (err) => {
+                console.warn("Firestore listener warning:", err);
+            });
+        }
+
+        function saveDiariesLocally() {
+            localStorage.setItem('mindscribe_diaries', JSON.stringify(state.diaries));
+            localStorage.setItem('mindscribe_profile', JSON.stringify(state.userProfile));
+            localStorage.setItem('mindscribe_passcode', state.passcode);
+            localStorage.setItem('gemini_api_key', state.geminiApiKey);
+        }
+
+        function loadLocalSettings() {
+            const savedKey = localStorage.getItem('gemini_api_key');
+            if (savedKey) state.geminiApiKey = savedKey;
+            
+            const savedPass = localStorage.getItem('mindscribe_passcode');
+            if (savedPass) state.passcode = savedPass;
+            
+            const savedProfile = localStorage.getItem('mindscribe_profile');
+            if (savedProfile) {
+                try { state.userProfile = JSON.parse(savedProfile); } catch(e){}
+            }
+
+            const savedDiaries = localStorage.getItem('mindscribe_diaries');
+            if (savedDiaries) {
+                try { state.diaries = JSON.parse(savedDiaries); } catch(e){}
+            }
+        }
+
+        async function syncDiaryEntry(dateKey, entryData) {
+            state.diaries[dateKey] = entryData;
+            saveDiariesLocally();
+            renderApp();
+
+            if (db && userId) {
+                try {
+                    const docRef = doc(db, 'users', userId, 'diaries', dateKey);
+                    const sanitizedPayload = JSON.parse(JSON.stringify(entryData));
+                    await setDoc(docRef, sanitizedPayload);
+                } catch(err) {
+                    console.error("Cloud sync error:", err);
+                    showToast("Saved locally (Cloud Sync pending)");
+                }
+            }
+        }
+
+        async function deleteDiaryEntry(dateKey) {
+            delete state.diaries[dateKey];
+            saveDiariesLocally();
+            renderApp();
+
+            if (db && userId) {
+                try {
+                    const docRef = doc(db, 'users', userId, 'diaries', dateKey);
+                    await deleteDoc(docRef);
+                } catch(err) {
+                    console.error("Cloud delete error:", err);
+                }
+            }
+        }
+
+        async function generateImageFromText(textPrompt) {
+            showLoading("Generating AI Image", "Gemini Flash Image is creating artwork for your diary...");
+            try {
+                const apiKey = state.geminiApiKey || "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent?key=${apiKey}`;
+                
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{ text: `High quality vivid artistic digital painting representing this diary entry: "${textPrompt}"` }]
+                        }],
+                        generationConfig: {
+                            responseModalities: ['IMAGE'],
+                            imageConfig: { aspectRatio: "4:3" }
+                        }
+                    })
+                });
+                
+                if (!response.ok) throw new Error("API response error");
+                const result = await response.json();
+                const part = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+                hideLoading();
+                
+                if (part) {
+                    return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+                } else {
+                    return "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=600&q=80";
+                }
+            } catch (err) {
+                console.warn("Gemini Image generation fallback:", err);
+                hideLoading();
+                showToast("Using artistic preset artwork");
+                return "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80";
+            }
+        }
+
+        async function generateMusicFromText(textPrompt) {
+            showLoading("Synthesizing Music", "Analyzing emotion & composing harmonic notes...");
+            try {
+                const apiKey = state.geminiApiKey || "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+                
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{ text: `Analyze this diary entry and create a synth musical mood track structure. Response must be JSON matching schema: "${textPrompt}"` }]
+                        }],
+                        generationConfig: {
+                            responseMimeType: "application/json",
+                            responseSchema: {
+                                type: "OBJECT",
+                                properties: {
+                                    title: { type: "STRING" },
+                                    mood: { type: "STRING" },
+                                    notes: { 
+                                        type: "ARRAY", 
+                                        items: { type: "STRING" } 
+                                    }
+                                },
+                                required: ["title", "mood", "notes"]
+                            }
+                        }
+                    })
+                });
+                
+                hideLoading();
+                if (response.ok) {
+                    const result = await response.json();
+                    const textData = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (textData) {
+                        return JSON.parse(textData);
+                    }
+                }
+            } catch (e) {
+                console.warn("Fallback synth note generator", e);
+            }
+            hideLoading();
+            return {
+                title: "Calm Horizon Soundscape",
+                mood: "Serene & Reflective",
+                notes: ["D4", "F4", "A4", "C5", "E5"]
+            };
+        }
+
+        function playSynthesizerNotes(notes) {
+            stopAudioSynth();
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                state.synthAudioCtx = new AudioContext();
+                
+                const noteFreqs = {
+                    'C3': 130.81, 'D3': 146.83, 'E3': 164.81, 'F3': 174.61, 'G3': 196.00, 'A3': 220.00, 'B3': 246.94,
+                    'C4': 261.63, 'D4': 293.66, 'E4': 329.63, 'F4': 349.23, 'G4': 392.00, 'A4': 440.00, 'B4': 493.88,
+                    'C5': 523.25, 'D5': 587.33, 'E5': 659.25, 'F5': 698.46, 'G5': 783.99
+                };
+                
+                state.isPlayingAudio = true;
+                let time = state.synthAudioCtx.currentTime;
+                const safeNotes = (Array.isArray(notes) && notes.length > 0) ? notes : ["C4", "E4", "G4", "C5"];
+                safeNotes.forEach((note, idx) => {
+                    const osc = state.synthAudioCtx.createOscillator();
+                    const gain = state.synthAudioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = noteFreqs[note] || 440;
+                    
+                    gain.gain.setValueAtTime(0, time + idx * 0.4);
+                    gain.gain.linearRampToValueAtTime(0.2, time + idx * 0.4 + 0.1);
+                    gain.gain.exponentialRampToValueAtTime(0.001, time + idx * 0.4 + 1.2);
+                    
+                    osc.connect(gain);
+                    gain.connect(state.synthAudioCtx.destination);
+                    
+                    osc.start(time + idx * 0.4);
+                    osc.stop(time + idx * 0.4 + 1.3);
+                    state.activeOscillators.push(osc);
+                });
+                setTimeout(() => {
+                    state.isPlayingAudio = false;
+                }, (safeNotes.length * 400) + 1200);
+            } catch (e) {
+                console.error("Web Audio error:", e);
+            }
+        }
+
+        function stopAudioSynth() {
+            if (state.synthAudioCtx) {
+                state.synthAudioCtx.close();
+                state.synthAudioCtx = null;
+            }
+            state.isPlayingAudio = false;
+        }
+
+        function switchView(viewName) {
+            state.currentView = viewName;
+            
+            ['home', 'editor', 'journals', 'gallery', 'music', 'profile'].forEach(v => {
+                const el = document.getElementById(`view-${v}`);
+                if (el) el.classList.toggle('hidden', v !== viewName);
+                
+                const navBtn = document.getElementById(`nav-${v}`);
+                if (navBtn) {
+                    if (v === viewName) {
+                        navBtn.className = 'nav-btn flex flex-col items-center justify-center py-1 px-3 rounded-xl text-indigo-600 font-semibold transition';
+                    } else {
+                        navBtn.className = 'nav-btn flex flex-col items-center justify-center py-1 px-3 rounded-xl text-slate-400 hover:text-slate-600 font-medium transition';
+                    }
+                }
+            });
+            renderHeader();
+            if (viewName === 'journals') renderJournalsList();
+            if (viewName === 'gallery') renderGalleryGrid();
+            if (viewName === 'music') renderMusicList();
+            if (viewName === 'profile') renderProfileStats();
+        }
+
+        function renderHeader() {
+            const titles = {
+                'home': 'Calendar',
+                'editor': 'Diary Editor',
+                'journals': 'Journal Entries',
+                'gallery': 'AI Gallery',
+                'music': 'AI Music',
+                'profile': 'My Profile'
+            };
+            document.getElementById('header-title').innerText = titles[state.currentView] || 'AI Diary';
+        }
+
+        function renderCalendar() {
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            document.getElementById('calendar-month-year').innerText = `${monthNames[state.currentCalendarMonth]} ${state.currentCalendarYear}`;
+            
+            const grid = document.getElementById('calendar-days-grid');
+            grid.innerHTML = '';
+            
+            const firstDay = new Date(state.currentCalendarYear, state.currentCalendarMonth, 1).getDay();
+            const totalDays = new Date(state.currentCalendarYear, state.currentCalendarMonth + 1, 0).getDate();
+            
+            for (let i = 0; i < firstDay; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'h-10';
+                grid.appendChild(emptyCell);
+            }
+            for (let day = 1; day <= totalDays; day++) {
+                const monthStr = String(state.currentCalendarMonth + 1).padStart(2, '0');
+                const dayStr = String(day).padStart(2, '0');
+                const dateKey = `${state.currentCalendarYear}-${monthStr}-${dayStr}`;
+                const hasEntry = !!state.diaries[dateKey];
+                const isSelected = state.selectedDate === dateKey;
+                const dayCell = document.createElement('button');
+                dayCell.className = `h-10 rounded-xl relative flex flex-col items-center justify-center transition ${
+                    isSelected ? 'bg-indigo-600 text-white font-bold shadow-md scale-105' : 'hover:bg-slate-100 text-slate-700'
+                }`;
+                dayCell.onclick = () => {
+                    state.selectedDate = dateKey;
+                    renderCalendar();
+                };
+                const dayNum = document.createElement('span');
+                dayNum.className = 'text-xs';
+                dayNum.innerText = day;
+                dayCell.appendChild(dayNum);
+                if (hasEntry) {
+                    const checkMark = document.createElement('div');
+                    checkMark.className = `absolute bottom-1 w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] ${
+                        isSelected ? 'bg-emerald-400 text-slate-900' : 'bg-emerald-500 text-white'
+                    }`;
+                    checkMark.innerHTML = `<i class="fas fa-check"></i>`;
+                    dayCell.appendChild(checkMark);
+                }
+                grid.appendChild(dayCell);
+            }
+            const dateObj = new Date(state.selectedDate + 'T00:00:00');
+            const options = { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' };
+            document.getElementById('selected-date-label').innerText = dateObj.toLocaleDateString('en-US', options);
+            
+            const hasCurrentEntry = !!state.diaries[state.selectedDate];
+            const statusText = document.getElementById('selected-date-status');
+            const actionBtn = document.getElementById('calendar-action-btn');
+            if (hasCurrentEntry) {
+                statusText.innerText = "Entry saved with media";
+                actionBtn.innerText = "View Entry";
+                actionBtn.onclick = () => openEntryModal(state.selectedDate);
+            } else {
+                statusText.innerText = "No diary entry written yet";
+                actionBtn.innerText = "Write Entry";
+                actionBtn.onclick = () => openEditorForDate(state.selectedDate);
+            }
+        }
+
+        function renderHomeRecent() {
+            const container = document.getElementById('home-recent-list');
+            container.innerHTML = '';
+            
+            const sortedKeys = Object.keys(state.diaries).sort().reverse().slice(0, 3);
+            if (sortedKeys.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-400 text-center py-4">No recent diary entries found.</p>`;
+                return;
+            }
+            sortedKeys.forEach(dateKey => {
+                const entry = state.diaries[dateKey];
+                const card = document.createElement('div');
+                card.className = "bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between cursor-pointer hover:border-indigo-200 transition";
+                card.onclick = () => openEntryModal(dateKey);
+                
+                const parts = dateKey.split('-');
+                const dayNum = parts[2] || '01';
+                const monthNum = parts[1] || '01';
+                card.innerHTML = `
+                    <div class="flex items-center space-x-3 overflow-hidden">
+                        <div class="w-10 h-10 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-600 font-bold text-xs flex flex-col items-center justify-center shrink-0">
+                            <span>${dayNum}</span>
+                            <span class="text-[9px] uppercase font-normal">${getMonthAbbr(monthNum)}</span>
+                        </div>
+                        <div class="overflow-hidden">
+                            <p class="text-xs font-semibold text-slate-800 truncate">${entry.text}</p>
+                            <div class="flex items-center space-x-2 text-[10px] text-slate-400 mt-0.5">
+                                ${entry.imageUrl ? '<span class="text-purple-600"><i class="fas fa-image me-0.5"></i> Artwork</span>' : ''}
+                                ${entry.musicTrack ? '<span class="text-emerald-600"><i class="fas fa-music me-0.5"></i> Audio</span>' : ''}
+                            </div>
+                        </div>
+                    </div>
+                    <i class="fas fa-chevron-right text-xs text-slate-300 ms-2"></i>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function renderJournalsList() {
+            const container = document.getElementById('journals-list-container');
+            container.innerHTML = '';
+            
+            const searchKey = document.getElementById('journal-search-input')?.value.toLowerCase() || '';
+            const sortedKeys = Object.keys(state.diaries).sort().reverse();
+            const filtered = sortedKeys.filter(key => state.diaries[key].text.toLowerCase().includes(searchKey));
+            
+            if (filtered.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-400 text-center py-8">No matching journal entries found.</p>`;
+                return;
+            }
+            filtered.forEach(dateKey => {
+                const entry = state.diaries[dateKey];
+                const card = document.createElement('div');
+                card.className = "bg-white p-4 rounded-xl border border-slate-100 shadow-sm space-y-2 cursor-pointer hover:border-indigo-200 transition";
+                card.onclick = () => openEntryModal(dateKey);
+                card.innerHTML = `
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="font-bold text-indigo-600">${dateKey}</span>
+                        <div class="flex items-center space-x-2 text-[11px]">
+                            ${entry.imageUrl ? '<i class="fas fa-image text-purple-500"></i>' : ''}
+                            ${entry.musicTrack ? '<i class="fas fa-music text-emerald-500"></i>' : ''}
+                        </div>
+                    </div>
+                    <p class="text-xs font-serif text-slate-700 line-clamp-3 leading-relaxed">${entry.text}</p>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function renderGalleryGrid() {
+            const grid = document.getElementById('gallery-grid');
+            grid.innerHTML = '';
+            
+            const withImages = Object.keys(state.diaries)
+                .filter(k => !!state.diaries[k].imageUrl)
+                .sort().reverse();
+            document.getElementById('gallery-count-badge').innerText = `${withImages.length} Images`;
+            if (withImages.length === 0) {
+                grid.innerHTML = `<p class="text-xs text-slate-400 text-center col-span-2 py-8">No AI generated artwork yet.</p>`;
+                return;
+            }
+            withImages.forEach(dateKey => {
+                const entry = state.diaries[dateKey];
+                const item = document.createElement('div');
+                item.className = "relative rounded-xl overflow-hidden border border-slate-200 shadow-sm group cursor-pointer aspect-square";
+                item.onclick = () => openEntryModal(dateKey);
+                item.innerHTML = `
+                    <img src="${entry.imageUrl}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" alt="Artwork">
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent opacity-90 p-2 flex flex-col justify-end text-white">
+                        <span class="text-[10px] font-bold">${dateKey}</span>
+                    </div>
+                `;
+                grid.appendChild(item);
+            });
+        }
+
+        function renderMusicList() {
+            const container = document.getElementById('music-tracks-list');
+            container.innerHTML = '';
+            
+            const withMusic = Object.keys(state.diaries)
+                .filter(k => !!state.diaries[k].musicTrack)
+                .sort().reverse();
+            if (withMusic.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-400 text-center py-8">No AI generated music tracks yet.</p>`;
+                return;
+            }
+            withMusic.forEach(dateKey => {
+                const entry = state.diaries[dateKey];
+                const track = entry.musicTrack;
+                const card = document.createElement('div');
+                card.className = "bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between";
+                card.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+                            <i class="fas fa-music"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-slate-800">${track.title || "Soundtrack"}</p>
+                            <p class="text-[10px] text-slate-400">${dateKey} • ${track.mood || "Ambient"}</p>
+                        </div>
+                    </div>
+                    <button class="play-btn w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow hover:bg-emerald-600 transition">
+                        <i class="fas fa-play text-xs ms-0.5"></i>
+                    </button>
+                `;
+                card.querySelector('.play-btn').onclick = () => {
+                    playSynthesizerNotes(track.notes);
+                    showToast("Playing AI synthesized soundtrack");
+                };
+                container.appendChild(card);
+            });
+        }
+
+        function renderProfileStats() {
+            const keys = Object.keys(state.diaries);
+            document.getElementById('stat-total-entries').innerText = keys.length;
+            document.getElementById('stat-total-images').innerText = keys.filter(k => !!state.diaries[k].imageUrl).length;
+            document.getElementById('stat-total-tracks').innerText = keys.filter(k => !!state.diaries[k].musicTrack).length;
+            
+            document.getElementById('profile-display-name').innerText = state.userProfile.name;
+            document.getElementById('profile-display-email').innerText = state.userProfile.email;
+            
+            const initials = state.userProfile.name.split(' ').map(n => n[0]).join('').toUpperCase();
+            document.getElementById('profile-avatar-initials').innerText = initials || 'JD';
+            
+            document.getElementById('profile-name-input').value = state.userProfile.name;
+            document.getElementById('profile-passcode-input').value = state.passcode;
+            document.getElementById('gemini-api-key-input').value = state.geminiApiKey;
+        }
+
+        function renderApp() {
+            renderHeader();
+            renderCalendar();
+            renderHomeRecent();
+            if (state.currentView === 'journals') renderJournalsList();
+            if (state.currentView === 'gallery') renderGalleryGrid();
+            if (state.currentView === 'music') renderMusicList();
+            if (state.currentView === 'profile') renderProfileStats();
+        }
+
+        function openEditorForDate(dateKey) {
+            state.selectedDate = dateKey;
+            document.getElementById('editor-date-input').value = dateKey;
+            
+            const existing = state.diaries[dateKey];
+            document.getElementById('diary-textarea').value = existing ? existing.text : '';
+            
+            // Populate activeEditingMedia state with existing record so media isn't lost
+            state.activeEditingMedia = {
+                imageUrl: existing ? (existing.imageUrl || null) : null,
+                musicTrack: existing ? (existing.musicTrack || null) : null
+            };
+            updateEditorMediaPreviews();
+            switchView('editor');
+        }
+
+        function updateEditorMediaPreviews() {
+            const imgWrap = document.getElementById('editor-image-preview-wrapper');
+            const imgEl = document.getElementById('editor-image-preview');
+            if (state.activeEditingMedia.imageUrl) {
+                imgEl.src = state.activeEditingMedia.imageUrl;
+                imgWrap.classList.remove('hidden');
+            } else {
+                imgWrap.classList.add('hidden');
+            }
+            const musicWrap = document.getElementById('editor-music-preview-wrapper');
+            if (state.activeEditingMedia.musicTrack) {
+                document.getElementById('editor-track-title').innerText = state.activeEditingMedia.musicTrack.title || "Soundtrack";
+                document.getElementById('editor-track-genre').innerText = state.activeEditingMedia.musicTrack.mood || "Ambient";
+                musicWrap.classList.remove('hidden');
+            } else {
+                musicWrap.classList.add('hidden');
+            }
+        }
+
+        function openEntryModal(dateKey) {
+            const entry = state.diaries[dateKey];
+            if (!entry) return;
+            state.currentModalDateKey = dateKey;
+            document.getElementById('modal-entry-date').innerText = dateKey;
+            document.getElementById('modal-entry-text').innerText = entry.text;
+            const imgContainer = document.getElementById('modal-image-container');
+            if (entry.imageUrl) {
+                document.getElementById('modal-entry-image').src = entry.imageUrl;
+                imgContainer.classList.remove('hidden');
+            } else {
+                imgContainer.classList.add('hidden');
+            }
+            const musicContainer = document.getElementById('modal-music-container');
+            if (entry.musicTrack) {
+                document.getElementById('modal-music-title').innerText = entry.musicTrack.title || "Track";
+                document.getElementById('modal-music-mood').innerText = entry.musicTrack.mood || "Mood";
+                musicContainer.classList.remove('hidden');
+            } else {
+                musicContainer.classList.add('hidden');
+            }
+            document.getElementById('entry-detail-modal').classList.remove('hidden');
+        }
+
+        function closeEntryModal() {
+            document.getElementById('entry-detail-modal').classList.add('hidden');
+            state.currentModalDateKey = null;
+        }
+
+        function getTodayString() {
+            const d = new Date();
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function getMonthAbbr(monthNumStr) {
+            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            const idx = parseInt(monthNumStr, 10) - 1;
+            return months[idx] || "Oct";
+        }
+
+        function showLoading(title, desc) {
+            document.getElementById('loading-title').innerText = title;
+            document.getElementById('loading-desc').innerText = desc;
+            document.getElementById('ai-loading-overlay').classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('ai-loading-overlay').classList.add('hidden');
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast-message');
+            document.getElementById('toast-text').innerText = message;
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 2500);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initFirebase();
+
+            setInterval(() => {
+                const now = new Date();
+                document.getElementById('current-time-clock').innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }, 1000);
+
+            // Passcode unlock
+            document.getElementById('unlock-btn').onclick = () => {
+                const pass = document.getElementById('passcode-input').value;
+                if (pass === state.passcode) {
+                    document.getElementById('lock-screen').classList.add('opacity-0');
+                    setTimeout(() => {
+                        document.getElementById('lock-screen').classList.add('hidden');
+                    }, 300);
+                } else {
+                    document.getElementById('lock-error').classList.remove('hidden');
+                }
+            };
+
+            document.getElementById('lock-app-btn').onclick = () => {
+                document.getElementById('lock-screen').classList.remove('hidden', 'opacity-0');
+                document.getElementById('passcode-input').value = '';
+                document.getElementById('lock-error').classList.add('hidden');
+                showToast("Journal locked");
+            };
+
+            // Calendar Navigation
+            document.getElementById('prev-month-btn').onclick = () => {
+                state.currentCalendarMonth--;
+                if (state.currentCalendarMonth < 0) {
+                    state.currentCalendarMonth = 11;
+                    state.currentCalendarYear--;
+                }
+                renderCalendar();
+            };
+            document.getElementById('next-month-btn').onclick = () => {
+                state.currentCalendarMonth++;
+                if (state.currentCalendarMonth > 11) {
+                    state.currentCalendarMonth = 0;
+                    state.currentCalendarYear++;
+                }
+                renderCalendar();
+            };
+
+            // Navigation clicks
+            document.getElementById('nav-home').onclick = () => switchView('home');
+            document.getElementById('nav-journals').onclick = () => switchView('journals');
+            document.getElementById('nav-gallery').onclick = () => switchView('gallery');
+            document.getElementById('nav-music').onclick = () => switchView('music');
+            document.getElementById('nav-profile').onclick = () => switchView('profile');
+            document.getElementById('view-all-journals-btn').onclick = () => switchView('journals');
+            document.getElementById('header-action-btn').onclick = () => openEditorForDate(getTodayString());
+
+            // AI Generation Buttons inside Editor
+            document.getElementById('btn-generate-image').onclick = async () => {
+                const text = document.getElementById('diary-textarea').value.trim();
+                if (!text) {
+                    showToast("Please write a diary entry first!");
+                    return;
+                }
+                const img = await generateImageFromText(text);
+                state.activeEditingMedia.imageUrl = img;
+                updateEditorMediaPreviews();
+                showToast("AI Artwork created!");
+            };
+
+            document.getElementById('btn-generate-music').onclick = async () => {
+                const text = document.getElementById('diary-textarea').value.trim();
+                if (!text) {
+                    showToast("Please write a diary entry first!");
+                    return;
+                }
+                const track = await generateMusicFromText(text);
+                state.activeEditingMedia.musicTrack = track;
+                updateEditorMediaPreviews();
+                showToast("AI Soundtrack generated!");
+            };
+
+            document.getElementById('editor-play-track-btn').onclick = () => {
+                if (state.activeEditingMedia.musicTrack) {
+                    playSynthesizerNotes(state.activeEditingMedia.musicTrack.notes);
+                    showToast("Playing synthesized soundtrack");
+                }
+            };
+
+            document.getElementById('remove-image-btn').onclick = () => {
+                state.activeEditingMedia.imageUrl = null;
+                updateEditorMediaPreviews();
+            };
+
+            document.getElementById('remove-music-btn').onclick = () => {
+                state.activeEditingMedia.musicTrack = null;
+                updateEditorMediaPreviews();
+            };
+
+            // FIXED: Save Entry now bundles Text + AI Image + AI Music Track together
+            document.getElementById('save-diary-btn').onclick = async () => {
+                const dateKey = document.getElementById('editor-date-input').value;
+                const text = document.getElementById('diary-textarea').value.trim();
+                if (!text) {
+                    showToast("Cannot save an empty entry.");
+                    return;
+                }
+
+                const entryData = {
+                    date: dateKey,
+                    text: text,
+                    imageUrl: state.activeEditingMedia.imageUrl || null,
+                    musicTrack: state.activeEditingMedia.musicTrack || null,
+                    updatedAt: Date.now()
+                };
+
+                await syncDiaryEntry(dateKey, entryData);
+                showToast("Entry saved with text, image & soundtrack!");
+                switchView('home');
+            };
+
+            // Modal Interactions
+            document.getElementById('close-modal-btn').onclick = closeEntryModal;
+            document.getElementById('modal-play-music-btn').onclick = () => {
+                if (state.currentModalDateKey && state.diaries[state.currentModalDateKey]?.musicTrack) {
+                    playSynthesizerNotes(state.diaries[state.currentModalDateKey].musicTrack.notes);
+                    showToast("Playing audio track");
+                }
+            };
+            document.getElementById('modal-edit-btn').onclick = () => {
+                if (state.currentModalDateKey) {
+                    const key = state.currentModalDateKey;
+                    closeEntryModal();
+                    openEditorForDate(key);
+                }
+            };
+            document.getElementById('modal-delete-btn').onclick = async () => {
+                if (state.currentModalDateKey) {
+                    const key = state.currentModalDateKey;
+                    closeEntryModal();
+                    await deleteDiaryEntry(key);
+                    showToast("Entry deleted");
+                }
+            };
+
+            // Search input
+            document.getElementById('journal-search-input').oninput = renderJournalsList;
+
+            // Toggle Gemini key visibility
+            document.getElementById('toggle-gemini-key-visibility').onclick = () => {
+                const input = document.getElementById('gemini-api-key-input');
+                input.type = input.type === 'password' ? 'text' : 'password';
+            };
+
+            // Profile Settings Save
+            document.getElementById('save-profile-btn').onclick = () => {
+                state.userProfile.name = document.getElementById('profile-name-input').value;
+                state.passcode = document.getElementById('profile-passcode-input').value || 'teacher123';
+                state.geminiApiKey = document.getElementById('gemini-api-key-input').value.trim();
+                saveDiariesLocally();
+                renderProfileStats();
+                showToast("Settings updated successfully");
+            };
+        });
+    </script>
+</body>
+</html>
