@@ -434,7 +434,7 @@
                 localStorage.setItem('mindscribe_passcode', state.passcode);
                 localStorage.setItem('gemini_api_key', state.geminiApiKey);
             } catch (e) {
-                console.warn("Storage exception handling triggered:", e);
+                console.warn("Storage quota limit reached while persisting state:", e);
                 showToast("Saved locally (Storage limit adjusted)");
             }
         }
@@ -457,10 +457,11 @@
             }
         }
 
-        // Helper function to compress large generated base64 images so localStorage never crashes
-        function compressBase64Image(base64Str, maxWidth = 600, quality = 0.7) {
+        // Helper function with crossOrigin set so Canvas/localStorage does not throw CORS taint errors on Mac
+        function compressBase64Image(base64Str, maxWidth = 450, quality = 0.6) {
             return new Promise((resolve) => {
                 const img = new Image();
+                img.crossOrigin = "Anonymous";
                 img.src = base64Str;
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
@@ -484,12 +485,14 @@
 
         async function generateImageFromText(textPrompt) {
             showLoading("Generating AI Image", "Gemini Flash Image is creating artwork for your diary...");
+            const fallbackUrl = "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=600&q=80";
+            
             try {
                 const apiKey = state.geminiApiKey || "";
                 if (!apiKey) {
                     hideLoading();
                     showToast("Please set your Gemini API key in Profile settings");
-                    return "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=600&q=80";
+                    return await compressBase64Image(fallbackUrl);
                 }
 
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent?key=${apiKey}`;
@@ -515,16 +518,15 @@
 
                 if (part) {
                     const rawBase64 = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-                    // Compress base64 to ensure storage compatibility
                     return await compressBase64Image(rawBase64);
                 } else {
-                    return "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=600&q=80";
+                    return await compressBase64Image(fallbackUrl);
                 }
             } catch (err) {
                 console.warn("Gemini Image generation fallback:", err);
                 hideLoading();
                 showToast("Using artistic preset artwork");
-                return "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80";
+                return await compressBase64Image("https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80");
             }
         }
 
@@ -871,7 +873,6 @@
             const existing = state.diaries[dateKey];
             document.getElementById('diary-textarea').value = existing ? existing.text : '';
             
-            // Sync existing media into current state
             state.activeEditingMedia = {
                 imageUrl: existing ? (existing.imageUrl || null) : null,
                 musicTrack: existing ? (existing.musicTrack || null) : null
@@ -1055,7 +1056,7 @@
                 updateEditorMediaPreviews();
             };
 
-            // SAVE ENTRY: Strictly Saves Text, Compressed Image, and Music
+            // SAVE ENTRY: Strictly Saves Text, Compressed Image, and Music to local state
             document.getElementById('save-diary-btn').onclick = async () => {
                 const dateKey = document.getElementById('editor-date-input').value;
                 const text = document.getElementById('diary-textarea').value.trim();
@@ -1064,7 +1065,6 @@
                     return;
                 }
 
-                // Explicit payload build referencing generated active media
                 const entryData = {
                     date: dateKey,
                     text: text,
