@@ -122,7 +122,6 @@
                             </button>
                         </div>
                     </div>
-
                     <div class="grid grid-cols-7 gap-1 text-center mb-2">
                         <span class="text-[11px] font-semibold text-slate-400">Sun</span>
                         <span class="text-[11px] font-semibold text-slate-400">Mon</span>
@@ -132,7 +131,6 @@
                         <span class="text-[11px] font-semibold text-slate-400">Fri</span>
                         <span class="text-[11px] font-semibold text-slate-400">Sat</span>
                     </div>
-
                     <div id="calendar-days-grid" class="grid grid-cols-7 gap-1 text-center"></div>
                 </div>
 
@@ -171,8 +169,32 @@
                     </div>
 
                     <div>
-                        <label class="block text-xs font-medium text-slate-400 mb-1">YOUR DIARY ENTRY</label>
-                        <textarea id="diary-textarea" rows="6" placeholder="Write your thoughts..." 
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label class="block text-xs font-medium text-slate-400">YOUR DIARY ENTRY</label>
+                            
+                            <!-- AI Mode Toggle Button & Action Trigger -->
+                            <div class="flex items-center space-x-1.5">
+                                <button id="ai-mode-toggle-btn" type="button" class="flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all duration-200 bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200">
+                                    <i class="fas fa-robot text-slate-400" id="ai-mode-icon"></i>
+                                    <span id="ai-mode-status-text">AI Mode Off</span>
+                                </button>
+                                
+                                <button id="ai-process-text-btn" type="button" class="hidden items-center space-x-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm transition animate-pulse">
+                                    <i class="fas fa-wand-magic-sparkles text-[10px]"></i>
+                                    <span>Polish / Write</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Info Badge when AI mode is active -->
+                        <div id="ai-mode-banner" class="hidden mb-2 p-2 bg-indigo-50/80 border border-indigo-100 rounded-lg flex items-center justify-between text-[11px] text-indigo-700">
+                            <div class="flex items-center space-x-1.5">
+                                <i class="fas fa-sparkles text-indigo-500"></i>
+                                <span>AI will check grammar or convert word lists into full entries.</span>
+                            </div>
+                        </div>
+
+                        <textarea id="diary-textarea" rows="6" placeholder="Write your thoughts or list keywords (e.g. coffee, sunny walk, relaxed)..." 
                             class="w-full text-sm font-serif leading-relaxed text-slate-800 p-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 resize-none"></textarea>
                     </div>
 
@@ -248,7 +270,7 @@
                 <div class="relative mb-2">
                     <i class="fas fa-search absolute left-3 top-3 text-slate-400 text-xs"></i>
                     <input type="text" id="journal-search-input" placeholder="Search entries..." 
-                        class="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-800">
+                        class="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-800 focus:outline-none focus:border-indigo-500">
                 </div>
                 <div id="journals-list-container" class="space-y-3"></div>
             </section>
@@ -307,7 +329,7 @@
                     <h3 class="text-xs font-bold text-indigo-600 uppercase tracking-wider">Gemini API Key</h3>
                     <div>
                         <input type="password" id="gemini-api-key-input" placeholder="AIzaSy..." 
-                            class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-mono text-slate-800">
+                            class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-mono text-slate-800 focus:outline-none focus:border-indigo-500">
                     </div>
                 </div>
 
@@ -316,12 +338,12 @@
                     <div>
                         <label class="block text-[11px] font-medium text-slate-500 mb-1">Full Name</label>
                         <input type="text" id="profile-name-input" value="Jane Doe" 
-                            class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800">
+                            class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-indigo-500">
                     </div>
                     <div>
                         <label class="block text-[11px] font-medium text-slate-500 mb-1">Passcode</label>
                         <input type="password" id="profile-passcode-input" value="teacher123" 
-                            class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-mono text-slate-800">
+                            class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-mono text-slate-800 focus:outline-none focus:border-indigo-500">
                     </div>
                     <button id="save-profile-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2.5 rounded-lg transition">
                         Save Settings
@@ -354,7 +376,7 @@
             </button>
         </nav>
 
-        <!-- Entry Modal Overlay -->
+        <!-- Entry Detail Modal Overlay -->
         <div id="entry-detail-modal" class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex flex-col justify-end">
             <div class="bg-white rounded-t-[32px] p-5 max-h-[90%] overflow-y-auto space-y-4 shadow-2xl">
                 <div class="w-12 h-1 bg-slate-200 rounded-full mx-auto mb-1"></div>
@@ -423,6 +445,7 @@
         </div>
     </div>
 
+    <!-- Application Script Logic -->
     <script type="module">
         const state = {
             currentView: 'home',
@@ -436,8 +459,46 @@
             activeEditingMedia: { imageUrl: null, musicTrack: null },
             currentModalDateKey: null,
             synthAudioCtx: null,
-            isPlayingAudio: false
+            isPlayingAudio: false,
+            aiModeActive: false // AI Mode toggle state
         };
+
+        function getTodayString() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function getMonthAbbr(monthNumStr) {
+            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            const idx = parseInt(monthNumStr, 10) - 1;
+            return months[idx] || "Jan";
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast-message');
+            const toastText = document.getElementById('toast-text');
+            if (!toast || !toastText) return;
+            toastText.innerText = message;
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3000);
+        }
+
+        function showLoading(title, desc) {
+            const overlay = document.getElementById('ai-loading-overlay');
+            document.getElementById('loading-title').innerText = title;
+            document.getElementById('loading-desc').innerText = desc;
+            if (overlay) overlay.classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            const overlay = document.getElementById('ai-loading-overlay');
+            if (overlay) overlay.classList.add('hidden');
+        }
 
         function saveDiariesLocally() {
             try {
@@ -446,8 +507,8 @@
                 localStorage.setItem('mindscribe_passcode', state.passcode);
                 localStorage.setItem('gemini_api_key', state.geminiApiKey);
             } catch (e) {
-                console.warn("Storage quota limit reached while persisting state:", e);
-                showToast("Saved locally (Storage limit adjusted)");
+                console.warn("Storage limit reached while persisting state:", e);
+                showToast("Saved locally");
             }
         }
 
@@ -457,12 +518,10 @@
             
             const savedPass = localStorage.getItem('mindscribe_passcode');
             if (savedPass) state.passcode = savedPass;
-
             const savedProfile = localStorage.getItem('mindscribe_profile');
             if (savedProfile) {
                 try { state.userProfile = JSON.parse(savedProfile); } catch(e){}
             }
-
             const savedDiaries = localStorage.getItem('mindscribe_diaries');
             if (savedDiaries) {
                 try { state.diaries = JSON.parse(savedDiaries); } catch(e){}
@@ -478,12 +537,10 @@
                     const canvas = document.createElement('canvas');
                     let width = img.width;
                     let height = img.height;
-
                     if (width > maxWidth) {
                         height = Math.round((height * maxWidth) / width);
                         width = maxWidth;
                     }
-
                     canvas.width = width;
                     canvas.height = height;
                     const ctx = canvas.getContext('2d');
@@ -492,6 +549,49 @@
                 };
                 img.onerror = () => resolve(base64Str);
             });
+        }
+
+        async function processDiaryWithAI(rawText) {
+            if (!rawText || !rawText.trim()) {
+                showToast("Please write some text or words first");
+                return rawText;
+            }
+
+            showLoading("AI Assistant Active", "Checking grammar & composing diary entry...");
+            try {
+                const apiKey = state.geminiApiKey || "";
+                const systemPrompt = `You are a helpful diary editing AI. 
+1. If the input consists of bullet points, keywords, or disconnected words (e.g., "coffee, sunny walk, relaxed, productiv day"), generate a cohesive, natural, expressive personal diary entry in the first person ("I").
+2. If the input contains complete sentences or paragraphs, check and correct all grammar, spelling, punctuation, and phrasing while preserving the user's authentic personal tone and voice.
+Return ONLY the final polished diary text. Do NOT include introductory text, meta remarks, or surround quotes.`;
+
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: rawText }] }],
+                        systemInstruction: { parts: [{ text: systemPrompt }] }
+                    })
+                });
+
+                hideLoading();
+                if (response.ok) {
+                    const result = await response.json();
+                    const textResult = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (textResult) {
+                        showToast("AI refined your diary entry!");
+                        return textResult.trim();
+                    }
+                } else {
+                    showToast("API call failed. Please check Gemini Key.");
+                }
+            } catch (e) {
+                console.warn("AI processing error:", e);
+                hideLoading();
+                showToast("AI processing unavailable");
+            }
+            return rawText;
         }
 
         async function generateImageFromText(textPrompt) {
@@ -505,7 +605,6 @@
                     showToast("Please set your Gemini API key in Profile settings");
                     return await compressBase64Image(fallbackUrl);
                 }
-
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent?key=${apiKey}`;
                 const response = await fetch(apiUrl, {
                     method: 'POST',
@@ -523,10 +622,8 @@
                 
                 hideLoading();
                 if (!response.ok) throw new Error("Gemini API Request Failed");
-
                 const result = await response.json();
                 const part = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
-
                 if (part) {
                     const rawBase64 = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
                     return await compressBase64Image(rawBase64);
@@ -553,7 +650,7 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             contents: [{
-                                parts: [{ text: `Analyze this diary entry and create a synth musical mood track structure. Response must be JSON matching schema: "${textPrompt}"` }]
+                                parts: [{ text: `Analyze this diary entry and create a synth musical mood track structure matching this text: "${textPrompt}"` }]
                             }],
                             generationConfig: {
                                 responseMimeType: "application/json",
@@ -616,21 +713,18 @@
                 }
                 const ctx = new AudioContext();
                 state.synthAudioCtx = ctx;
-
                 const noteFreqs = {
                     'C2': 65.41, 'D2': 73.42, 'E2': 82.41, 'F2': 87.31, 'G2': 98.00, 'A2': 110.00, 'B2': 123.47,
                     'C3': 130.81, 'D3': 146.83, 'E3': 164.81, 'F3': 174.61, 'G3': 196.00, 'A3': 220.00, 'B3': 246.94,
                     'C4': 261.63, 'D4': 293.66, 'E4': 329.63, 'F4': 349.23, 'G4': 392.00, 'A4': 440.00, 'B4': 493.88,
                     'C5': 523.25, 'D5': 587.33, 'E5': 659.25, 'F5': 698.46, 'G5': 783.99, 'A5': 880.00, 'B5': 987.77
                 };
-
                 const instrument = trackData?.instrument || document.getElementById('instrument-select')?.value || 'synth';
                 const startTime = ctx.currentTime;
                 const progression = trackData?.progression || [
                     { chord: ["C3", "G3", "C4"], melody: ["E4", "G4", "B4", "C5"] }
                 ];
-
-                // 1. Synthetic Reverb Convolver Node
+                
                 const convolver = ctx.createConvolver();
                 const rate = ctx.sampleRate;
                 const length = rate * 2.5; 
@@ -643,10 +737,8 @@
                     }
                 }
                 convolver.buffer = impulse;
-
                 const masterGain = ctx.createGain();
                 masterGain.gain.setValueAtTime(0.7, startTime);
-
                 const wetGain = ctx.createGain();
                 wetGain.gain.setValueAtTime(0.35, startTime);
                 
@@ -654,16 +746,13 @@
                 masterGain.connect(convolver);
                 convolver.connect(wetGain);
                 wetGain.connect(ctx.destination);
-
                 const measureDuration = 5.0;
 
                 function triggerVoice(freq, tTime, dur, isChord) {
                     const filter = ctx.createBiquadFilter();
                     const gain = ctx.createGain();
-
                     const osc1 = ctx.createOscillator();
                     const osc2 = ctx.createOscillator();
-
                     let baseType = 'triangle';
                     let detune = 6;
                     let filterStart = 2000;
@@ -675,51 +764,42 @@
                         osc2.frequency.value = freq * 2;
                         filterStart = isChord ? 1200 : 2800;
                         filterEnd = 200;
-                        
                         gain.gain.setValueAtTime(0, tTime);
                         gain.gain.linearRampToValueAtTime(isChord ? 0.12 : 0.25, tTime + 0.015);
                         gain.gain.exponentialRampToValueAtTime(0.0001, tTime + (isChord ? dur : 2.5));
-
                     } else if (instrument === 'flute') {
                         baseType = 'sine';
                         osc2.type = 'triangle';
                         detune = 3;
                         filterStart = 1500;
                         filterEnd = 600;
-
                         gain.gain.setValueAtTime(0, tTime);
                         gain.gain.linearRampToValueAtTime(isChord ? 0.08 : 0.18, tTime + 0.4);
                         gain.gain.exponentialRampToValueAtTime(0.0001, tTime + dur + 0.5);
-
                     } else if (instrument === 'chime') {
                         baseType = 'sine';
                         osc2.type = 'sine';
                         osc2.frequency.value = freq * 2.75;
                         filterStart = 4000;
                         filterEnd = 1000;
-
                         gain.gain.setValueAtTime(0, tTime);
                         gain.gain.linearRampToValueAtTime(0.2, tTime + 0.005);
                         gain.gain.exponentialRampToValueAtTime(0.0001, tTime + 3.0);
-
                     } else if (instrument === 'retro') {
                         baseType = 'square';
                         osc2.type = 'sawtooth';
                         detune = 12;
                         filterStart = 3000;
                         filterEnd = 800;
-
                         gain.gain.setValueAtTime(0, tTime);
                         gain.gain.linearRampToValueAtTime(0.08, tTime + 0.02);
                         gain.gain.exponentialRampToValueAtTime(0.0001, tTime + 1.5);
-
                     } else { 
                         baseType = 'sawtooth';
                         osc2.type = 'triangle';
                         detune = 10;
                         filterStart = 1800;
                         filterEnd = 400;
-
                         gain.gain.setValueAtTime(0, tTime);
                         gain.gain.linearRampToValueAtTime(0.1, tTime + 0.8);
                         gain.gain.exponentialRampToValueAtTime(0.0001, tTime + dur + 0.5);
@@ -727,21 +807,17 @@
 
                     osc1.type = baseType;
                     osc1.frequency.setValueAtTime(freq, tTime);
-
                     if (instrument !== 'piano' && instrument !== 'chime') {
                         osc2.frequency.setValueAtTime(freq, tTime);
                     }
                     osc2.detune.setValueAtTime(detune, tTime);
-
                     filter.type = 'lowpass';
                     filter.frequency.setValueAtTime(filterStart, tTime);
                     filter.frequency.exponentialRampToValueAtTime(filterEnd, tTime + (isChord ? dur : 1.2));
-
                     osc1.connect(filter);
                     osc2.connect(filter);
                     filter.connect(gain);
                     gain.connect(masterGain);
-
                     osc1.start(tTime);
                     osc2.start(tTime);
                     osc1.stop(tTime + dur + 0.6);
@@ -750,14 +826,12 @@
 
                 progression.forEach((measure, mIndex) => {
                     const mTime = startTime + (mIndex * measureDuration);
-
                     if (measure.chord && Array.isArray(measure.chord)) {
                         measure.chord.forEach(note => {
                             const freq = noteFreqs[note] || 130.81;
                             triggerVoice(freq, mTime, measureDuration, true);
                         });
                     }
-
                     if (measure.melody && Array.isArray(measure.melody)) {
                         const noteInterval = measureDuration / measure.melody.length;
                         measure.melody.forEach((note, nIndex) => {
@@ -767,7 +841,7 @@
                         });
                     }
                 });
-
+                showToast(`Playing synthesized track`);
             } catch (e) {
                 console.error("Web Audio playback error:", e);
             }
@@ -825,7 +899,6 @@
                 const dateKey = `${state.currentCalendarYear}-${monthStr}-${dayStr}`;
                 const hasEntry = !!state.diaries[dateKey];
                 const isSelected = state.selectedDate === dateKey;
-
                 const dayCell = document.createElement('button');
                 dayCell.className = `h-10 rounded-xl relative flex flex-col items-center justify-center transition ${
                     isSelected ? 'bg-indigo-600 text-white font-bold shadow-md scale-105' : 'hover:bg-slate-100 text-slate-700'
@@ -834,12 +907,10 @@
                     state.selectedDate = dateKey;
                     renderCalendar();
                 };
-
                 const dayNum = document.createElement('span');
                 dayNum.className = 'text-xs';
                 dayNum.innerText = day;
                 dayCell.appendChild(dayNum);
-
                 if (hasEntry) {
                     const checkMark = document.createElement('div');
                     checkMark.className = `absolute bottom-1 w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] ${
@@ -850,7 +921,6 @@
                 }
                 grid.appendChild(dayCell);
             }
-
             const dateObj = new Date(state.selectedDate + 'T00:00:00');
             document.getElementById('selected-date-label').innerText = dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
             
@@ -879,7 +949,7 @@
             sortedKeys.forEach(dateKey => {
                 const entry = state.diaries[dateKey];
                 const card = document.createElement('div');
-                card.className = "bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between cursor-pointer hover:border-indigo-200";
+                card.className = "bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between cursor-pointer hover:border-indigo-200 transition";
                 card.onclick = () => openEntryModal(dateKey);
                 
                 const parts = dateKey.split('-');
@@ -893,138 +963,14 @@
                             <p class="text-xs font-semibold text-slate-800 truncate">${entry.text}</p>
                             <div class="flex items-center space-x-2 text-[10px] text-slate-400 mt-0.5">
                                 ${entry.imageUrl ? '<span class="text-purple-600"><i class="fas fa-image me-0.5"></i> Artwork</span>' : ''}
-                                ${entry.musicTrack ? '<span class="text-emerald-600"><i class="fas fa-music me-0.5"></i> Audio</span>' : ''}
+                                ${entry.musicTrack ? '<span class="text-emerald-600"><i class="fas fa-music me-0.5"></i> Music</span>' : ''}
                             </div>
                         </div>
                     </div>
-                    <i class="fas fa-chevron-right text-xs text-slate-300 ms-2"></i>
+                    <i class="fas fa-chevron-right text-xs text-slate-300"></i>
                 `;
                 container.appendChild(card);
             });
-        }
-
-        function renderJournalsList() {
-            const container = document.getElementById('journals-list-container');
-            container.innerHTML = '';
-            
-            const searchKey = document.getElementById('journal-search-input')?.value.toLowerCase() || '';
-            const sortedKeys = Object.keys(state.diaries).sort().reverse();
-            const filtered = sortedKeys.filter(key => state.diaries[key].text.toLowerCase().includes(searchKey));
-            
-            if (filtered.length === 0) {
-                container.innerHTML = `<p class="text-xs text-slate-400 text-center py-8">No matching journal entries found.</p>`;
-                return;
-            }
-            filtered.forEach(dateKey => {
-                const entry = state.diaries[dateKey];
-                const card = document.createElement('div');
-                card.className = "bg-white p-4 rounded-xl border border-slate-100 shadow-sm space-y-2 cursor-pointer hover:border-indigo-200";
-                card.onclick = () => openEntryModal(dateKey);
-                card.innerHTML = `
-                    <div class="flex justify-between items-center text-xs">
-                        <span class="font-bold text-indigo-600">${dateKey}</span>
-                        <div class="flex items-center space-x-2 text-[11px]">
-                            ${entry.imageUrl ? '<i class="fas fa-image text-purple-500"></i>' : ''}
-                            ${entry.musicTrack ? '<i class="fas fa-music text-emerald-500"></i>' : ''}
-                        </div>
-                    </div>
-                    <p class="text-xs font-serif text-slate-700 line-clamp-3 leading-relaxed">${entry.text}</p>
-                `;
-                container.appendChild(card);
-            });
-        }
-
-        function renderGalleryGrid() {
-            const grid = document.getElementById('gallery-grid');
-            grid.innerHTML = '';
-            
-            const withImages = Object.keys(state.diaries)
-                .filter(k => !!state.diaries[k].imageUrl)
-                .sort().reverse();
-                
-            document.getElementById('gallery-count-badge').innerText = `${withImages.length} Images`;
-            if (withImages.length === 0) {
-                grid.innerHTML = `<p class="text-xs text-slate-400 text-center col-span-2 py-8">No AI generated artwork stored.</p>`;
-                return;
-            }
-            withImages.forEach(dateKey => {
-                const entry = state.diaries[dateKey];
-                const item = document.createElement('div');
-                item.className = "relative rounded-xl overflow-hidden border border-slate-200 shadow-sm group cursor-pointer aspect-square bg-slate-100";
-                item.onclick = () => openEntryModal(dateKey);
-                item.innerHTML = `
-                    <img src="${entry.imageUrl}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" alt="AI Artwork">
-                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent opacity-90 p-2 flex flex-col justify-end text-white">
-                        <span class="text-[10px] font-bold">${dateKey}</span>
-                    </div>
-                `;
-                grid.appendChild(item);
-            });
-        }
-
-        function renderMusicList() {
-            const container = document.getElementById('music-tracks-list');
-            container.innerHTML = '';
-            
-            const withMusic = Object.keys(state.diaries)
-                .filter(k => !!state.diaries[k].musicTrack)
-                .sort().reverse();
-            if (withMusic.length === 0) {
-                container.innerHTML = `<p class="text-xs text-slate-400 text-center py-8">No AI generated music tracks saved.</p>`;
-                return;
-            }
-            withMusic.forEach(dateKey => {
-                const entry = state.diaries[dateKey];
-                const track = entry.musicTrack;
-                const card = document.createElement('div');
-                card.className = "bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between";
-                card.innerHTML = `
-                    <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-                            <i class="fas fa-music"></i>
-                        </div>
-                        <div>
-                            <p class="text-xs font-bold text-slate-800">${track.title || "Soundtrack"}</p>
-                            <p class="text-[10px] text-slate-400">${dateKey} • ${track.mood || "Ambient"}</p>
-                        </div>
-                    </div>
-                    <button class="play-btn w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow">
-                        <i class="fas fa-play text-xs ms-0.5"></i>
-                    </button>
-                `;
-                card.querySelector('.play-btn').onclick = () => {
-                    playSynthesizerNotes(track);
-                    showToast("Playing AI synthesized soundtrack");
-                };
-                container.appendChild(card);
-            });
-        }
-
-        function renderProfileStats() {
-            const keys = Object.keys(state.diaries);
-            document.getElementById('stat-total-entries').innerText = keys.length;
-            document.getElementById('stat-total-images').innerText = keys.filter(k => !!state.diaries[k].imageUrl).length;
-            document.getElementById('stat-total-tracks').innerText = keys.filter(k => !!state.diaries[k].musicTrack).length;
-            
-            document.getElementById('profile-display-name').innerText = state.userProfile.name;
-            document.getElementById('profile-display-email').innerText = state.userProfile.email;
-            
-            const initials = state.userProfile.name.split(' ').map(n => n[0]).join('').toUpperCase();
-            document.getElementById('profile-avatar-initials').innerText = initials || 'JD';
-            
-            document.getElementById('profile-name-input').value = state.userProfile.name;
-            document.getElementById('profile-passcode-input').value = state.passcode;
-            document.getElementById('gemini-api-key-input').value = state.geminiApiKey;
-        }
-
-        function renderApp() {
-            renderHeader();
-            renderCalendar();
-            renderHomeRecent();
-            if (state.currentView === 'journals') renderJournalsList();
-            if (state.currentView === 'gallery') renderGalleryGrid();
-            if (state.currentView === 'music') renderMusicList();
-            if (state.currentView === 'profile') renderProfileStats();
         }
 
         function openEditorForDate(dateKey) {
@@ -1032,50 +978,198 @@
             document.getElementById('editor-date-input').value = dateKey;
             
             const existing = state.diaries[dateKey];
-            document.getElementById('diary-textarea').value = existing ? existing.text : '';
-            
-            if (existing && existing.musicTrack && existing.musicTrack.instrument) {
-                document.getElementById('instrument-select').value = existing.musicTrack.instrument;
+            const textArea = document.getElementById('diary-textarea');
+            if (existing) {
+                textArea.value = existing.text || '';
+                state.activeEditingMedia = {
+                    imageUrl: existing.imageUrl || null,
+                    musicTrack: existing.musicTrack || null
+                };
+            } else {
+                textArea.value = '';
+                state.activeEditingMedia = { imageUrl: null, musicTrack: null };
             }
-
-            state.activeEditingMedia = {
-                imageUrl: existing ? (existing.imageUrl || null) : null,
-                musicTrack: existing ? (existing.musicTrack || null) : null
-            };
-            updateEditorMediaPreviews();
+            updateEditorPreviews();
             switchView('editor');
         }
 
-        function updateEditorMediaPreviews() {
-            const imgWrap = document.getElementById('editor-image-preview-wrapper');
-            const imgEl = document.getElementById('editor-image-preview');
-            if (state.activeEditingMedia.imageUrl) {
-                imgEl.src = state.activeEditingMedia.imageUrl;
-                imgWrap.classList.remove('hidden');
-            } else {
-                imgWrap.classList.add('hidden');
-            }
+        function updateAIModeUI() {
+            const toggleBtn = document.getElementById('ai-mode-toggle-btn');
+            const icon = document.getElementById('ai-mode-icon');
+            const text = document.getElementById('ai-mode-status-text');
+            const processBtn = document.getElementById('ai-process-text-btn');
+            const banner = document.getElementById('ai-mode-banner');
 
-            const musicWrap = document.getElementById('editor-music-preview-wrapper');
-            if (state.activeEditingMedia.musicTrack) {
-                document.getElementById('editor-track-title').innerText = state.activeEditingMedia.musicTrack.title || "Soundtrack";
-                document.getElementById('editor-track-genre').innerText = state.activeEditingMedia.musicTrack.mood || "Ambient";
-                musicWrap.classList.remove('hidden');
+            if (state.aiModeActive) {
+                toggleBtn.className = "flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border transition-all duration-200 bg-gradient-to-r from-indigo-500 to-purple-600 text-white border-transparent shadow-sm shadow-indigo-200";
+                icon.className = "fas fa-robot text-white";
+                text.innerText = "AI Mode ON";
+                processBtn.classList.remove('hidden');
+                processBtn.classList.add('flex');
+                banner.classList.remove('hidden');
             } else {
-                musicWrap.classList.add('hidden');
+                toggleBtn.className = "flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all duration-200 bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200";
+                icon.className = "fas fa-robot text-slate-400";
+                text.innerText = "AI Mode Off";
+                processBtn.classList.add('hidden');
+                processBtn.classList.remove('flex');
+                banner.classList.add('hidden');
             }
         }
 
+        function updateEditorPreviews() {
+            const imgWrapper = document.getElementById('editor-image-preview-wrapper');
+            const imgEl = document.getElementById('editor-image-preview');
+            if (state.activeEditingMedia.imageUrl) {
+                imgEl.src = state.activeEditingMedia.imageUrl;
+                imgWrapper.classList.remove('hidden');
+            } else {
+                imgWrapper.classList.add('hidden');
+            }
+
+            const musicWrapper = document.getElementById('editor-music-preview-wrapper');
+            if (state.activeEditingMedia.musicTrack) {
+                document.getElementById('editor-track-title').innerText = state.activeEditingMedia.musicTrack.title || "Ambient Track";
+                document.getElementById('editor-track-genre').innerText = state.activeEditingMedia.musicTrack.mood || "AI Music";
+                musicWrapper.classList.remove('hidden');
+            } else {
+                musicWrapper.classList.add('hidden');
+            }
+        }
+
+        function renderJournalsList() {
+            const container = document.getElementById('journals-list-container');
+            container.innerHTML = '';
+            const searchVal = document.getElementById('journal-search-input').value.toLowerCase();
+            
+            const keys = Object.keys(state.diaries).sort().reverse();
+            const filteredKeys = keys.filter(k => {
+                const text = state.diaries[k].text.toLowerCase();
+                return text.includes(searchVal) || k.includes(searchVal);
+            });
+
+            if (filteredKeys.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-400 text-center py-6">No matching journal entries found.</p>`;
+                return;
+            }
+
+            filteredKeys.forEach(k => {
+                const item = state.diaries[k];
+                const div = document.createElement('div');
+                div.className = "bg-white p-3.5 rounded-2xl border border-slate-100 shadow-sm flex flex-col space-y-2 cursor-pointer hover:border-indigo-200 transition";
+                div.onclick = () => openEntryModal(k);
+                
+                div.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-bold text-indigo-600">${k}</span>
+                        <div class="flex items-center space-x-1.5 text-[10px]">
+                            ${item.imageUrl ? '<span class="bg-purple-50 text-purple-600 px-2 py-0.5 rounded-full"><i class="fas fa-image me-1"></i>Artwork</span>' : ''}
+                            ${item.musicTrack ? '<span class="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full"><i class="fas fa-music me-1"></i>Track</span>' : ''}
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-700 font-serif line-clamp-2 leading-relaxed">${item.text}</p>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function renderGalleryGrid() {
+            const grid = document.getElementById('gallery-grid');
+            grid.innerHTML = '';
+            
+            const entriesWithImages = Object.entries(state.diaries).filter(([_, v]) => !!v.imageUrl);
+            document.getElementById('gallery-count-badge').innerText = `${entriesWithImages.length} Images`;
+
+            if (entriesWithImages.length === 0) {
+                grid.innerHTML = `<div class="col-span-2 text-center py-8 text-xs text-slate-400">No generated artwork found yet.</div>`;
+                return;
+            }
+
+            entriesWithImages.forEach(([dateKey, item]) => {
+                const card = document.createElement('div');
+                card.className = "relative rounded-xl overflow-hidden shadow-sm group cursor-pointer aspect-square bg-slate-100 border border-slate-200";
+                card.onclick = () => openEntryModal(dateKey);
+                
+                card.innerHTML = `
+                    <img src="${item.imageUrl}" alt="AI Memory" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-80 group-hover:opacity-100 transition p-2.5 flex flex-col justify-end">
+                        <span class="text-[10px] text-indigo-300 font-bold">${dateKey}</span>
+                        <p class="text-[10px] text-white font-serif truncate">${item.text}</p>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function renderMusicList() {
+            const container = document.getElementById('music-tracks-list');
+            container.innerHTML = '';
+            
+            const entriesWithMusic = Object.entries(state.diaries).filter(([_, v]) => !!v.musicTrack);
+            if (entriesWithMusic.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-400 text-center py-6">No synthesized audio tracks saved yet.</p>`;
+                return;
+            }
+
+            entriesWithMusic.forEach(([dateKey, item]) => {
+                const track = item.musicTrack;
+                const card = document.createElement('div');
+                card.className = "bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between";
+                
+                card.innerHTML = `
+                    <div class="flex items-center space-x-3 overflow-hidden">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold text-sm shrink-0">
+                            <i class="fas fa-compact-disc"></i>
+                        </div>
+                        <div class="overflow-hidden">
+                            <h4 class="text-xs font-bold text-slate-800 truncate">${track.title || 'Synth Track'}</h4>
+                            <p class="text-[10px] text-slate-400">${dateKey} • ${track.mood || 'Ambient'}</p>
+                        </div>
+                    </div>
+                    <button class="play-track-btn w-9 h-9 rounded-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 flex items-center justify-center shadow transition shrink-0">
+                        <i class="fas fa-play text-xs ms-0.5"></i>
+                    </button>
+                `;
+                card.querySelector('.play-track-btn').onclick = () => playSynthesizerNotes(track);
+                container.appendChild(card);
+            });
+        }
+
+        function renderProfileStats() {
+            const total = Object.keys(state.diaries).length;
+            let imgCount = 0;
+            let musicCount = 0;
+            Object.values(state.diaries).forEach(v => {
+                if (v.imageUrl) imgCount++;
+                if (v.musicTrack) musicCount++;
+            });
+            document.getElementById('stat-total-entries').innerText = total;
+            document.getElementById('stat-total-images').innerText = imgCount;
+            document.getElementById('stat-total-tracks').innerText = musicCount;
+
+            document.getElementById('profile-display-name').innerText = state.userProfile.name;
+            document.getElementById('profile-display-email').innerText = state.userProfile.email;
+            
+            const initials = state.userProfile.name.split(' ').map(n => n[0]).join('').toUpperCase() || 'JD';
+            document.getElementById('profile-avatar-initials').innerText = initials;
+
+            document.getElementById('gemini-api-key-input').value = state.geminiApiKey || '';
+            document.getElementById('profile-name-input').value = state.userProfile.name || '';
+            document.getElementById('profile-passcode-input').value = state.passcode || '';
+        }
+
         function openEntryModal(dateKey) {
+            state.currentModalDateKey = dateKey;
             const entry = state.diaries[dateKey];
             if (!entry) return;
-            state.currentModalDateKey = dateKey;
+
             document.getElementById('modal-entry-date').innerText = dateKey;
             document.getElementById('modal-entry-text').innerText = entry.text;
 
             const imgContainer = document.getElementById('modal-image-container');
+            const imgEl = document.getElementById('modal-entry-image');
             if (entry.imageUrl) {
-                document.getElementById('modal-entry-image').src = entry.imageUrl;
+                imgEl.src = entry.imageUrl;
                 imgContainer.classList.remove('hidden');
             } else {
                 imgContainer.classList.add('hidden');
@@ -1083,76 +1177,143 @@
 
             const musicContainer = document.getElementById('modal-music-container');
             if (entry.musicTrack) {
-                document.getElementById('modal-music-title').innerText = entry.musicTrack.title || "Track";
-                document.getElementById('modal-music-mood').innerText = entry.musicTrack.mood || "Mood";
+                document.getElementById('modal-music-title').innerText = entry.musicTrack.title || 'Soundtrack';
+                document.getElementById('modal-music-mood').innerText = entry.musicTrack.mood || 'Ambient';
                 musicContainer.classList.remove('hidden');
             } else {
                 musicContainer.classList.add('hidden');
             }
+
             document.getElementById('entry-detail-modal').classList.remove('hidden');
-        }
-
-        function closeEntryModal() {
-            document.getElementById('entry-detail-modal').classList.add('hidden');
-            state.currentModalDateKey = null;
-        }
-
-        function getTodayString() {
-            const d = new Date();
-            const year = d.getFullYear();
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
-        }
-
-        function getMonthAbbr(monthNumStr) {
-            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-            const idx = parseInt(monthNumStr, 10) - 1;
-            return months[idx] || "Oct";
-        }
-
-        function showLoading(title, desc) {
-            document.getElementById('loading-title').innerText = title;
-            document.getElementById('loading-desc').innerText = desc;
-            document.getElementById('ai-loading-overlay').classList.remove('hidden');
-        }
-
-        function hideLoading() {
-            document.getElementById('ai-loading-overlay').classList.add('hidden');
-        }
-
-        function showToast(message) {
-            const toast = document.getElementById('toast-message');
-            document.getElementById('toast-text').innerText = message;
-            toast.classList.remove('hidden');
-            setTimeout(() => {
-                toast.classList.add('hidden');
-            }, 2500);
         }
 
         document.addEventListener('DOMContentLoaded', () => {
             loadLocalSettings();
-            renderApp();
 
+            // Status bar clock
             setInterval(() => {
                 const now = new Date();
-                document.getElementById('current-time-clock').innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const clock = document.getElementById('current-time-clock');
+                if (clock) {
+                    clock.innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+                }
             }, 1000);
 
-            // Passcode unlock
+            // Passcode unlock logic
             document.getElementById('unlock-btn').onclick = () => {
-                const pass = document.getElementById('passcode-input').value;
-                if (pass === state.passcode) {
+                const inputVal = document.getElementById('passcode-input').value;
+                if (inputVal === state.passcode) {
                     document.getElementById('lock-screen').classList.add('opacity-0');
                     setTimeout(() => {
                         document.getElementById('lock-screen').classList.add('hidden');
                     }, 300);
+                    renderCalendar();
+                    renderHomeRecent();
                 } else {
                     document.getElementById('lock-error').classList.remove('hidden');
                 }
             };
 
-            // Calendar Month Buttons
+            // AI Mode Toggle Listener
+            document.getElementById('ai-mode-toggle-btn').onclick = () => {
+                state.aiModeActive = !state.aiModeActive;
+                updateAIModeUI();
+                showToast(state.aiModeActive ? "AI Mode Turned ON" : "AI Mode Turned OFF");
+            };
+
+            // AI Process Text Button
+            document.getElementById('ai-process-text-btn').onclick = async () => {
+                const textArea = document.getElementById('diary-textarea');
+                if (!textArea.value.trim()) {
+                    showToast("Write some text or words first");
+                    return;
+                }
+                const resultText = await processDiaryWithAI(textArea.value);
+                textArea.value = resultText;
+            };
+
+            // Save Diary Button
+            document.getElementById('save-diary-btn').onclick = async () => {
+                const dateKey = document.getElementById('editor-date-input').value || state.selectedDate;
+                let textVal = document.getElementById('diary-textarea').value.trim();
+
+                if (!textVal) {
+                    showToast("Please write a diary entry");
+                    return;
+                }
+
+                // If AI Mode is ON, correct grammar or compose text before saving
+                if (state.aiModeActive) {
+                    textVal = await processDiaryWithAI(textVal);
+                    document.getElementById('diary-textarea').value = textVal;
+                }
+
+                state.diaries[dateKey] = {
+                    text: textVal,
+                    imageUrl: state.activeEditingMedia.imageUrl,
+                    musicTrack: state.activeEditingMedia.musicTrack,
+                    updatedAt: Date.now()
+                };
+
+                saveDiariesLocally();
+                showToast("Diary Entry Saved!");
+                renderCalendar();
+                renderHomeRecent();
+                switchView('home');
+            };
+
+            // Generate AI Image
+            document.getElementById('btn-generate-image').onclick = async () => {
+                const text = document.getElementById('diary-textarea').value;
+                if (!text.trim()) {
+                    showToast("Write your entry first before generating image");
+                    return;
+                }
+                const imgData = await generateImageFromText(text);
+                state.activeEditingMedia.imageUrl = imgData;
+                updateEditorPreviews();
+            };
+
+            // Generate AI Music
+            document.getElementById('btn-generate-music').onclick = async () => {
+                const text = document.getElementById('diary-textarea').value;
+                if (!text.trim()) {
+                    showToast("Write your entry first before generating music");
+                    return;
+                }
+                const track = await generateMusicFromText(text);
+                state.activeEditingMedia.musicTrack = track;
+                updateEditorPreviews();
+                playSynthesizerNotes(track);
+            };
+
+            // Remove Media buttons
+            document.getElementById('remove-image-btn').onclick = () => {
+                state.activeEditingMedia.imageUrl = null;
+                updateEditorPreviews();
+            };
+            document.getElementById('remove-music-btn').onclick = () => {
+                state.activeEditingMedia.musicTrack = null;
+                updateEditorPreviews();
+            };
+
+            // Play track from editor preview
+            document.getElementById('editor-play-track-btn').onclick = () => {
+                if (state.activeEditingMedia.musicTrack) {
+                    playSynthesizerNotes(state.activeEditingMedia.musicTrack);
+                }
+            };
+
+            // Navigation bar buttons
+            document.getElementById('nav-home').onclick = () => { switchView('home'); renderCalendar(); renderHomeRecent(); };
+            document.getElementById('nav-journals').onclick = () => switchView('journals');
+            document.getElementById('nav-gallery').onclick = () => switchView('gallery');
+            document.getElementById('nav-music').onclick = () => switchView('music');
+            document.getElementById('nav-profile').onclick = () => switchView('profile');
+
+            // Header & Calendar actions
+            document.getElementById('header-action-btn').onclick = () => openEditorForDate(getTodayString());
+            document.getElementById('view-all-journals-btn').onclick = () => switchView('journals');
             document.getElementById('prev-month-btn').onclick = () => {
                 state.currentCalendarMonth--;
                 if (state.currentCalendarMonth < 0) {
@@ -1170,121 +1331,52 @@
                 renderCalendar();
             };
 
-            // Navigation clicks
-            document.getElementById('nav-home').onclick = () => switchView('home');
-            document.getElementById('nav-journals').onclick = () => switchView('journals');
-            document.getElementById('nav-gallery').onclick = () => switchView('gallery');
-            document.getElementById('nav-music').onclick = () => switchView('music');
-            document.getElementById('nav-profile').onclick = () => switchView('profile');
-            document.getElementById('view-all-journals-btn').onclick = () => switchView('journals');
-            document.getElementById('header-action-btn').onclick = () => openEditorForDate(getTodayString());
+            // Search filter
+            document.getElementById('journal-search-input').oninput = () => renderJournalsList();
 
-            // AI Generation Buttons inside Editor
-            document.getElementById('btn-generate-image').onclick = async () => {
-                const text = document.getElementById('diary-textarea').value.trim();
-                if (!text) {
-                    showToast("Please write a diary entry first!");
-                    return;
-                }
-                const img = await generateImageFromText(text);
-                state.activeEditingMedia.imageUrl = img;
-                updateEditorMediaPreviews();
-                showToast("AI Artwork created & staged for save!");
-            };
-
-            document.getElementById('btn-generate-music').onclick = async () => {
-                const text = document.getElementById('diary-textarea').value.trim();
-                if (!text) {
-                    showToast("Please write a diary entry first!");
-                    return;
-                }
-                const track = await generateMusicFromText(text);
-                state.activeEditingMedia.musicTrack = track;
-                updateEditorMediaPreviews();
-                showToast("AI Music track generated!");
-            };
-
-            document.getElementById('editor-play-track-btn').onclick = () => {
-                if (state.activeEditingMedia.musicTrack) {
-                    playSynthesizerNotes(state.activeEditingMedia.musicTrack);
-                    showToast("Playing synthesized track");
-                }
-            };
-
-            document.getElementById('remove-image-btn').onclick = () => {
-                state.activeEditingMedia.imageUrl = null;
-                updateEditorMediaPreviews();
-            };
-
-            document.getElementById('remove-music-btn').onclick = () => {
-                state.activeEditingMedia.musicTrack = null;
-                updateEditorMediaPreviews();
-            };
-
-            // SAVE ENTRY
-            document.getElementById('save-diary-btn').onclick = async () => {
-                const dateKey = document.getElementById('editor-date-input').value;
-                const text = document.getElementById('diary-textarea').value.trim();
-                if (!text) {
-                    showToast("Cannot save an empty entry.");
-                    return;
-                }
-
-                const entryData = {
-                    date: dateKey,
-                    text: text,
-                    imageUrl: state.activeEditingMedia.imageUrl || null,
-                    musicTrack: state.activeEditingMedia.musicTrack || null,
-                    updatedAt: Date.now()
-                };
-
-                state.diaries[dateKey] = entryData;
+            // Profile save button
+            document.getElementById('save-profile-btn').onclick = () => {
+                state.geminiApiKey = document.getElementById('gemini-api-key-input').value.trim();
+                state.userProfile.name = document.getElementById('profile-name-input').value.trim() || 'Jane Doe';
+                state.passcode = document.getElementById('profile-passcode-input').value.trim() || 'teacher123';
                 saveDiariesLocally();
-                renderApp();
-
-                showToast("Entry saved with text, artwork & soundtrack!");
-                switchView('home');
+                renderProfileStats();
+                showToast("Settings Updated Successfully");
             };
 
-            // Modal Controls
-            document.getElementById('close-modal-btn').onclick = closeEntryModal;
+            // Modal handlers
+            document.getElementById('close-modal-btn').onclick = () => {
+                document.getElementById('entry-detail-modal').classList.add('hidden');
+            };
             document.getElementById('modal-play-music-btn').onclick = () => {
                 if (state.currentModalDateKey && state.diaries[state.currentModalDateKey]?.musicTrack) {
                     playSynthesizerNotes(state.diaries[state.currentModalDateKey].musicTrack);
-                    showToast("Playing audio track");
                 }
             };
             document.getElementById('modal-edit-btn').onclick = () => {
                 if (state.currentModalDateKey) {
-                    const key = state.currentModalDateKey;
-                    closeEntryModal();
-                    openEditorForDate(key);
+                    document.getElementById('entry-detail-modal').classList.add('hidden');
+                    openEditorForDate(state.currentModalDateKey);
                 }
             };
             document.getElementById('modal-delete-btn').onclick = () => {
                 if (state.currentModalDateKey) {
                     delete state.diaries[state.currentModalDateKey];
                     saveDiariesLocally();
-                    renderApp();
-                    closeEntryModal();
-                    showToast("Entry deleted");
+                    document.getElementById('entry-detail-modal').classList.add('hidden');
+                    showToast("Entry Deleted");
+                    renderCalendar();
+                    renderHomeRecent();
+                    if (state.currentView === 'journals') renderJournalsList();
+                    if (state.currentView === 'gallery') renderGalleryGrid();
+                    if (state.currentView === 'music') renderMusicList();
                 }
             };
 
-            // Search
-            document.getElementById('journal-search-input').oninput = renderJournalsList;
-
-            // Profile Settings Save
-            document.getElementById('save-profile-btn').onclick = () => {
-                state.userProfile.name = document.getElementById('profile-name-input').value;
-                state.passcode = document.getElementById('profile-passcode-input').value || 'teacher123';
-                state.geminiApiKey = document.getElementById('gemini-api-key-input').value.trim();
-                saveDiariesLocally();
-                renderProfileStats();
-                showToast("Settings saved successfully");
-            };
+            // Initial render call
+            renderCalendar();
+            renderHomeRecent();
         });
     </script>
 </body>
 </html>
-       
